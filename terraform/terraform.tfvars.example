@@ -1,0 +1,16 @@
+# Core infrastructure — copy to terraform.tfvars and fill in values.
+# terraform.tfvars is in .gitignore — do not commit personal or secret values.
+
+aws_region  = "eu-central-1"
+environment = "shared"
+project     = "BankOfAnthos"
+owner       = "your-name"
+
+# VPC (defaults match a 2-AZ layout in eu-central-1)
+vpc_name               = "bank-of-anthos"
+vpc_cidr               = "10.0.0.0/16"
+availability_zones     = ["eu-central-1a", "eu-central-1b"]
+public_subnet_cidrs    = ["10.0.0.0/24", "10.0.1.0/24"]
+private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24"]
+enable_nat_gateway     = true
+single_nat_gateway     = true
