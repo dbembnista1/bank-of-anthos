@@ -1,0 +1,13 @@
+# Bootstrap — copy to terraform.tfvars and fill in values.
+# terraform.tfvars is in .gitignore — do not commit secrets.
+# Apply manually once before using CI/CD.
+
+project_name     = "bank-of-anthos"
+aws_region       = "eu-central-1"
+aws_profile      = "default"
+github_owner     = "your-github-username"
+github_repo_name = "aws-eks-bank-of-anthos"
+
+# Pass the token via environment variable — never store it here:
+#   PowerShell: $env:TF_VAR_github_token = "ghp_..."
+#   bash:       export TF_VAR_github_token="ghp_..."
