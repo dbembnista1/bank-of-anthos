@@ -5,6 +5,7 @@
 project_name     = "bank-of-anthos"
 aws_region       = "eu-central-1"
 aws_profile      = "default"
+owner            = "your-name"
 github_owner     = "your-github-username"
 github_repo_name = "aws-eks-bank-of-anthos"
 

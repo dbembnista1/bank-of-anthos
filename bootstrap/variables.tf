@@ -4,8 +4,13 @@ variable "project_name" {
   default     = "bank-of-anthos"
 }
 
+variable "owner" {
+  description = "Value for the Owner tag (cost and security auditor)"
+  type        = string
+}
+
 variable "common_tags" {
-  description = "Common tags applied to all resources"
+  description = "Common tags applied to all resources (Owner is merged from var.owner)"
   type        = map(string)
   default = {
     Project     = "BankOfAnthos"

@@ -29,7 +29,9 @@ provider "aws" {
   profile = var.aws_profile
 
   default_tags {
-    tags = var.common_tags
+    tags = merge(var.common_tags, {
+      Owner = var.owner
+    })
   }
 }
 
