@@ -1,0 +1,11 @@
+# Remote backend configuration — created by bootstrap.
+# Copy to backend.conf and fill in real values from bootstrap outputs,
+# or let the CI/CD pipeline generate it automatically from GitHub Variables.
+#
+# Usage:
+#   terraform init -backend-config="backend.conf"
+
+bucket         = "bank-of-anthos-tf-state-XXXXXX"
+key            = "terraform.tfstate"
+region         = "eu-central-1"
+dynamodb_table = "bank-of-anthos-tf-locks"

@@ -1,0 +1,29 @@
+# Default values for bank-of-anthos.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  domain: bank-of-anthos.local
+
+frontend:
+  image:
+    repository: gcr.io/bank-of-anthos/frontend
+    tag: latest
+  replicas: 1
+
+ledgerWriter:
+  image:
+    repository: gcr.io/bank-of-anthos/ledgerwriter
+    tag: latest
+  replicas: 1
+
+# RDS Database Configuration (To be injected via External Secrets)
+database:
+  ledgerDb:
+    host: "placeholder"
+    port: 5432
+    name: "ledger-db"
+  accountsDb:
+    host: "placeholder"
+    port: 5432
+    name: "accounts-db"
