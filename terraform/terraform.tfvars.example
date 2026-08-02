@@ -14,3 +14,13 @@ public_subnet_cidrs    = ["10.0.0.0/24", "10.0.1.0/24"]
 private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24"]
 enable_nat_gateway     = true
 single_nat_gateway     = true
+
+# EKS (shared cluster; env split is namespaces bank-of-anthos-dev / bank-of-anthos-prod)
+eks_cluster_name            = "bank-of-anthos"
+eks_cluster_version         = "1.31"
+eks_endpoint_public_access  = true
+eks_endpoint_private_access = true
+eks_node_instance_types     = ["t3.medium"]
+eks_node_min_size           = 2
+eks_node_max_size           = 4
+eks_node_desired_size       = 2

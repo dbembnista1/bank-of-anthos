@@ -68,3 +68,51 @@ variable "single_nat_gateway" {
   type        = bool
   default     = true
 }
+
+variable "eks_cluster_name" {
+  description = "Name of the shared EKS cluster (dev/prod separated by namespaces)"
+  type        = string
+  default     = "bank-of-anthos"
+}
+
+variable "eks_cluster_version" {
+  description = "Kubernetes version for the EKS control plane"
+  type        = string
+  default     = "1.31"
+}
+
+variable "eks_endpoint_public_access" {
+  description = "Allow public access to the Kubernetes API (local kubectl); private access stays enabled"
+  type        = bool
+  default     = true
+}
+
+variable "eks_endpoint_private_access" {
+  description = "Allow private VPC access to the Kubernetes API"
+  type        = bool
+  default     = true
+}
+
+variable "eks_node_instance_types" {
+  description = "EC2 instance types for the managed node group"
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "eks_node_min_size" {
+  description = "Minimum size of the managed node group"
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum size of the managed node group"
+  type        = number
+  default     = 4
+}
+
+variable "eks_node_desired_size" {
+  description = "Desired size of the managed node group"
+  type        = number
+  default     = 2
+}

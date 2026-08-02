@@ -22,3 +22,39 @@ output "nat_gateway_ids" {
   description = "NAT Gateway IDs"
   value       = module.vpc.nat_gateway_ids
 }
+
+output "eks_cluster_name" {
+  description = "Name of the shared EKS cluster"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "API server endpoint of the EKS cluster"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_certificate_authority_data" {
+  description = "Base64-encoded CA data for kubeconfig"
+  value       = module.eks.cluster_certificate_authority_data
+  sensitive   = true
+}
+
+output "eks_oidc_provider_arn" {
+  description = "IAM OIDC provider ARN for IRSA"
+  value       = module.eks.oidc_provider_arn
+}
+
+output "eks_oidc_provider" {
+  description = "OIDC provider URL without https:// (for IAM trust policies)"
+  value       = module.eks.oidc_provider
+}
+
+output "eks_node_security_group_id" {
+  description = "Node security group ID (RDS ingress in a later phase)"
+  value       = module.eks.node_security_group_id
+}
+
+output "eks_cluster_security_group_id" {
+  description = "Cluster security group ID"
+  value       = module.eks.cluster_security_group_id
+}
