@@ -59,3 +59,11 @@ module "eks" {
   node_max_size       = var.eks_node_max_size
   node_desired_size   = var.eks_node_desired_size
 }
+
+module "ecr" {
+  source = "./modules/ecr"
+
+  repository_names    = var.ecr_repository_names
+  lifecycle_keep_last = var.ecr_lifecycle_keep_last
+  force_delete        = var.ecr_force_delete
+}
