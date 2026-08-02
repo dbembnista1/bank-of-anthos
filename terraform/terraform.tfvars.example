@@ -29,3 +29,15 @@ eks_node_desired_size       = 2
 # ecr_repository_names defaults cover all 7 Bank of Anthos services
 ecr_lifecycle_keep_last = 10
 ecr_force_delete        = true
+
+# RDS (PostgreSQL — accounts + ledger; passwords managed by AWS in Secrets Manager)
+# rds_instances defaults: accounts_db / ledger_db (underscores — RDS forbids hyphens in db_name)
+rds_name_prefix               = "bank-of-anthos"
+rds_engine_version            = "16.14"
+rds_instance_class            = "db.t4g.micro"
+rds_allocated_storage         = 20
+rds_max_allocated_storage     = 0
+rds_multi_az                  = false
+rds_backup_retention_period   = 1
+rds_deletion_protection       = false
+rds_skip_final_snapshot       = true

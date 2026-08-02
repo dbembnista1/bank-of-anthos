@@ -67,3 +67,22 @@ module "ecr" {
   lifecycle_keep_last = var.ecr_lifecycle_keep_last
   force_delete        = var.ecr_force_delete
 }
+
+module "rds" {
+  source = "./modules/rds"
+
+  name_prefix                = var.rds_name_prefix
+  vpc_id                     = module.vpc.vpc_id
+  subnet_ids                 = module.vpc.private_subnet_ids
+  allowed_security_group_ids = [module.eks.node_security_group_id]
+
+  instances               = var.rds_instances
+  engine_version          = var.rds_engine_version
+  instance_class          = var.rds_instance_class
+  allocated_storage       = var.rds_allocated_storage
+  max_allocated_storage   = var.rds_max_allocated_storage
+  multi_az                = var.rds_multi_az
+  backup_retention_period = var.rds_backup_retention_period
+  deletion_protection     = var.rds_deletion_protection
+  skip_final_snapshot     = var.rds_skip_final_snapshot
+}
