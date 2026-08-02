@@ -45,7 +45,7 @@ output "cluster_security_group_id" {
 }
 
 output "node_security_group_id" {
-  description = "Shared security group ID for managed node groups (use for RDS ingress later)"
+  description = "Shared security group ID for managed node groups (RDS ingress source)"
   value       = module.eks.node_security_group_id
 }
 

@@ -142,3 +142,78 @@ variable "ecr_force_delete" {
   type        = bool
   default     = true
 }
+
+variable "rds_name_prefix" {
+  description = "Prefix for RDS subnet group and security group names"
+  type        = string
+  default     = "bank-of-anthos"
+}
+
+variable "rds_instances" {
+  description = "RDS PostgreSQL instances (accounts + ledger). db_name/username: letters, digits, underscore only (RDS constraint)."
+  type = map(object({
+    identifier = string
+    db_name    = string
+    username   = string
+  }))
+  default = {
+    accounts = {
+      identifier = "bank-of-anthos-accounts"
+      db_name    = "accounts_db"
+      username   = "accounts_admin"
+    }
+    ledger = {
+      identifier = "bank-of-anthos-ledger"
+      db_name    = "ledger_db"
+      username   = "ledger_admin"
+    }
+  }
+}
+
+variable "rds_engine_version" {
+  description = "PostgreSQL engine version for all RDS instances"
+  type        = string
+  default     = "16.14"
+}
+
+variable "rds_instance_class" {
+  description = "RDS instance class (db.t4g.micro for lab FinOps)"
+  type        = string
+  default     = "db.t4g.micro"
+}
+
+variable "rds_allocated_storage" {
+  description = "Allocated storage in GiB per instance"
+  type        = number
+  default     = 20
+}
+
+variable "rds_max_allocated_storage" {
+  description = "Storage autoscaling upper limit in GiB (0 = disabled)"
+  type        = number
+  default     = 0
+}
+
+variable "rds_multi_az" {
+  description = "Enable Multi-AZ for RDS (higher cost; default false for lab)"
+  type        = bool
+  default     = false
+}
+
+variable "rds_backup_retention_period" {
+  description = "Days to retain automated backups"
+  type        = number
+  default     = 1
+}
+
+variable "rds_deletion_protection" {
+  description = "Prevent accidental RDS deletion (disable for lab teardown)"
+  type        = bool
+  default     = false
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Skip final snapshot on destroy (lab teardown convenience)"
+  type        = bool
+  default     = true
+}

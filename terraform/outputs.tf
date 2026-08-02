@@ -50,7 +50,7 @@ output "eks_oidc_provider" {
 }
 
 output "eks_node_security_group_id" {
-  description = "Node security group ID (RDS ingress in a later phase)"
+  description = "Node security group ID (source for RDS ingress)"
   value       = module.eks.node_security_group_id
 }
 
@@ -72,4 +72,34 @@ output "ecr_repository_arns" {
 output "ecr_registry_id" {
   description = "AWS account ID hosting the ECR registry"
   value       = module.ecr.registry_id
+}
+
+output "rds_security_group_id" {
+  description = "Security group ID for RDS instances"
+  value       = module.rds.security_group_id
+}
+
+output "rds_instance_endpoints" {
+  description = "Map of logical DB name => endpoint hostname (for Helm values)"
+  value       = module.rds.instance_endpoints
+}
+
+output "rds_instance_ports" {
+  description = "Map of logical DB name => port"
+  value       = module.rds.instance_ports
+}
+
+output "rds_db_names" {
+  description = "Map of logical DB name => PostgreSQL database name"
+  value       = module.rds.db_names
+}
+
+output "rds_master_usernames" {
+  description = "Map of logical DB name => master username"
+  value       = module.rds.master_usernames
+}
+
+output "rds_master_user_secret_arns" {
+  description = "Map of logical DB name => Secrets Manager ARN (managed master password; for ESO)"
+  value       = module.rds.master_user_secret_arns
 }
