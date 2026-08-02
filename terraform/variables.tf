@@ -116,3 +116,29 @@ variable "eks_node_desired_size" {
   type        = number
   default     = 2
 }
+
+variable "ecr_repository_names" {
+  description = "ECR repos for Bank of Anthos app images (ledger-db/accounts-db use RDS, not container images)"
+  type        = list(string)
+  default = [
+    "bank-of-anthos/frontend",
+    "bank-of-anthos/ledgerwriter",
+    "bank-of-anthos/balancereader",
+    "bank-of-anthos/transactionhistory",
+    "bank-of-anthos/userservice",
+    "bank-of-anthos/contacts",
+    "bank-of-anthos/loadgenerator",
+  ]
+}
+
+variable "ecr_lifecycle_keep_last" {
+  description = "Keep the last N images per repository; expire older ones"
+  type        = number
+  default     = 10
+}
+
+variable "ecr_force_delete" {
+  description = "Allow destroying non-empty ECR repos (lab teardown)"
+  type        = bool
+  default     = true
+}

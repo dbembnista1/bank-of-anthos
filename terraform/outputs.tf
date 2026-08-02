@@ -58,3 +58,18 @@ output "eks_cluster_security_group_id" {
   description = "Cluster security group ID"
   value       = module.eks.cluster_security_group_id
 }
+
+output "ecr_repository_urls" {
+  description = "Map of ECR repository name => URL (CI push / Helm image values)"
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_repository_arns" {
+  description = "Map of ECR repository name => ARN (IAM in CI phase)"
+  value       = module.ecr.repository_arns
+}
+
+output "ecr_registry_id" {
+  description = "AWS account ID hosting the ECR registry"
+  value       = module.ecr.registry_id
+}
