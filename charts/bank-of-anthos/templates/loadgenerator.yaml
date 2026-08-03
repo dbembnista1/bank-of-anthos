@@ -1,0 +1,53 @@
+{{- if .Values.loadgenerator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgenerator
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    app: loadgenerator
+    team: loadgenerator
+    tier: test
+spec:
+  replicas: {{ .Values.loadgenerator.replicas }}
+  selector:
+    matchLabels:
+      app: loadgenerator
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-of-anthos.labels" . | nindent 8 }}
+        app: loadgenerator
+        team: loadgenerator
+        tier: test
+    spec:
+      serviceAccountName: {{ include "bank-of-anthos.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: loadgenerator
+          image: {{ include "bank-of-anthos.image" (dict "root" . "image" .Values.loadgenerator.image) }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: FRONTEND_ADDR
+              value: {{ printf "frontend:%v" .Values.frontend.service.port | quote }}
+            - name: USERS
+              value: "5"
+            - name: LOG_LEVEL
+              value: error
+          resources:
+            {{- toYaml .Values.loadgenerator.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+{{- end }}

@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledgerwriter
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    app: ledgerwriter
+    team: ledger
+    tier: backend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.ledgerWriter.service.port }}
+      targetPort: {{ .Values.ledgerWriter.service.port }}
+  selector:
+    app: ledgerwriter
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledgerwriter
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    app: ledgerwriter
+    team: ledger
+    tier: backend
+spec:
+  replicas: {{ .Values.ledgerWriter.replicas }}
+  selector:
+    matchLabels:
+      app: ledgerwriter
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-of-anthos.labels" . | nindent 8 }}
+        app: ledgerwriter
+        team: ledger
+        tier: backend
+    spec:
+      serviceAccountName: {{ include "bank-of-anthos.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: ledgerwriter
+          image: {{ include "bank-of-anthos.image" (dict "root" . "image" .Values.ledgerWriter.image) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ .Values.ledgerWriter.service.port }}
+          env:
+            - name: VERSION
+              value: {{ .Values.ledgerWriter.image.tag | quote }}
+            - name: PORT
+              value: {{ .Values.ledgerWriter.service.port | quote }}
+            - name: ENABLE_TRACING
+              value: {{ .Values.global.enableTracing | quote }}
+            - name: ENABLE_METRICS
+              value: "true"
+            - name: JVM_OPTS
+              value: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms256m -Xmx512m"
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel | quote }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bank-of-anthos.ledgerDbSecretName" . }}
+                  key: password
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bank-of-anthos.ledgerDbSecretName" . }}
+                  key: password
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: service-api-config
+            - configMapRef:
+                name: ledger-db-config
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.ledgerWriter.service.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.ledgerWriter.service.port }}
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.ledgerWriter.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: publickey
+              mountPath: /tmp/.ssh
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: publickey
+          secret:
+            secretName: {{ include "bank-of-anthos.jwtSecretName" . }}
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey

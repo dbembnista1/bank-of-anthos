@@ -1,21 +1,29 @@
-# Overrides for DEV environment
+# Overrides for DEV environment (merged on top of values.yaml by ArgoCD).
+# Resources come from values.yaml (upstream Bank of Anthos kubernetes-manifests).
+# Shared EKS cluster — namespace bank-of-anthos-dev.
 
 frontend:
   replicas: 1
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "250m"
-      memory: "256Mi"
+
+userservice:
+  replicas: 1
+
+contacts:
+  replicas: 1
 
 ledgerWriter:
   replicas: 1
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "250m"
-      memory: "256Mi"
+
+balanceReader:
+  replicas: 1
+
+transactionHistory:
+  replicas: 1
+
+loadgenerator:
+  enabled: true
+  replicas: 1
+
+dbInit:
+  enabled: true
+  loadDemoData: true
