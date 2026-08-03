@@ -1,0 +1,25 @@
+# Canonical AppProject for Bank of Anthos Applications.
+# Terraform argocd-bootstrap also creates this at cluster bootstrap (argocd-apps chart).
+# Keep both in sync when changing sourceRepos or destinations.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: bank-of-anthos
+  namespace: argocd
+spec:
+  description: Bank of Anthos GitOps apps (shared cluster, namespace isolation)
+  sourceRepos:
+    - https://github.com/dbembnista1/aws-eks-bank-of-anthos.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: bank-of-anthos-dev
+    - server: https://kubernetes.default.svc
+      namespace: bank-of-anthos-prod
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

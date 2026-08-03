@@ -4,17 +4,17 @@ metadata:
   name: bank-of-anthos-dev
   namespace: argocd
 spec:
-  project: default
+  project: bank-of-anthos
   source:
-    repoURL: 'https://github.com/dbembnista1/aws-eks-bank-of-anthos.git'
+    repoURL: https://github.com/dbembnista1/aws-eks-bank-of-anthos.git
     path: charts/bank-of-anthos
-    targetRevision: HEAD
+    targetRevision: main
     helm:
       valueFiles:
         - values.yaml
         - values-dev.yaml
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: https://kubernetes.default.svc
     namespace: bank-of-anthos-dev
   syncPolicy:
     automated:
