@@ -1,29 +1,174 @@
-# Default values for bank-of-anthos.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Default values for bank-of-anthos umbrella chart.
+# Environment overlays: values-dev.yaml / values-prod.yaml (merged by ArgoCD).
+# Image tags are updated by CI (phase 9). Passwords never live here — External Secrets (phase 7).
 
 global:
-  domain: bank-of-anthos.local
+  # Replace ACCOUNT_ID after terraform apply (ecr_repository_urls / aws account id).
+  imageRegistry: "ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com"
+  # Shared labels applied by templates
+  labels:
+    application: bank-of-anthos
+  # Demo / routing config (ConfigMaps)
+  localRoutingNum: "883745000"
+  pubKeyPath: "/tmp/.ssh/publickey"
+  logLevel: info
+  enableTracing: "false"
+
+# Secret names expected in the namespace (created by External Secrets Operator — not by this chart).
+secrets:
+  jwt:
+    name: jwt-key
+  accountsDb:
+    name: accounts-db-credentials
+  ledgerDb:
+    name: ledger-db-credentials
+
+# RDS hosts from terraform output rds_instance_endpoints (passwords via secrets.* above).
+# db names use underscores — RDS CreateDBInstance forbids hyphens.
+database:
+  accountsDb:
+    host: "PLACEHOLDER_ACCOUNTS_RDS_ENDPOINT"
+    port: 5432
+    name: "accounts_db"
+    username: "accounts_admin"
+  ledgerDb:
+    host: "PLACEHOLDER_LEDGER_RDS_ENDPOINT"
+    port: 5432
+    name: "ledger_db"
+    username: "ledger_admin"
+
+# One-shot Jobs that apply upstream BoA SQL schema (+ optional demo data) to RDS.
+# Requires DB credentials Secrets to exist (phase 7). Safe to disable after first successful seed.
+dbInit:
+  enabled: true
+  image: "postgres:16-alpine"
+  # Load demo users / transactions from upstream init scripts
+  loadDemoData: true
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+# ---------------------------------------------------------------------------
+# Application services (ECR repos match terraform ecr_repository_names)
+# resources match upstream kubernetes-manifests in GoogleCloudPlatform/bank-of-anthos
+# ---------------------------------------------------------------------------
 
 frontend:
   image:
-    repository: gcr.io/bank-of-anthos/frontend
-    tag: latest
+    repository: bank-of-anthos/frontend
+    tag: "CHANGEME"
   replicas: 1
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "128Mi"
+
+userservice:
+  image:
+    repository: bank-of-anthos/userservice
+    tag: "CHANGEME"
+  replicas: 1
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "260m"
+      memory: "128Mi"
+      ephemeral-storage: "0.25Gi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+      ephemeral-storage: "0.25Gi"
+
+contacts:
+  image:
+    repository: bank-of-anthos/contacts
+    tag: "CHANGEME"
+  replicas: 1
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+      ephemeral-storage: "0.25Gi"
+    limits:
+      cpu: "250m"
+      memory: "128Mi"
+      ephemeral-storage: "0.25Gi"
 
 ledgerWriter:
   image:
-    repository: gcr.io/bank-of-anthos/ledgerwriter
-    tag: latest
+    repository: bank-of-anthos/ledgerwriter
+    tag: "CHANGEME"
   replicas: 1
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+      ephemeral-storage: "0.5Gi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      ephemeral-storage: "0.5Gi"
 
-# RDS Database Configuration (To be injected via External Secrets)
-database:
-  ledgerDb:
-    host: "placeholder"
-    port: 5432
-    name: "ledger-db"
-  accountsDb:
-    host: "placeholder"
-    port: 5432
-    name: "accounts-db"
+balanceReader:
+  image:
+    repository: bank-of-anthos/balancereader
+    tag: "CHANGEME"
+  replicas: 1
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+      ephemeral-storage: "0.5Gi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      ephemeral-storage: "0.5Gi"
+
+transactionHistory:
+  image:
+    repository: bank-of-anthos/transactionhistory
+    tag: "CHANGEME"
+  replicas: 1
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+      ephemeral-storage: "0.5Gi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      ephemeral-storage: "0.5Gi"
+
+loadgenerator:
+  enabled: true
+  image:
+    repository: bank-of-anthos/loadgenerator
+    tag: "CHANGEME"
+  replicas: 1
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "512Mi"
+    limits:
+      cpu: "250m"
+      memory: "1Gi"

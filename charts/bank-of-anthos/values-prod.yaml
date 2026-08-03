@@ -1,21 +1,29 @@
-# Overrides for PROD environment
+# Overrides for PROD environment (merged on top of values.yaml by ArgoCD).
+# Resources come from values.yaml (upstream Bank of Anthos kubernetes-manifests).
+# HA: replicas >= 2 for stateless services. Shared EKS — namespace bank-of-anthos-prod.
 
 frontend:
   replicas: 3
-  resources:
-    requests:
-      cpu: "250m"
-      memory: "256Mi"
-    limits:
-      cpu: "500m"
-      memory: "512Mi"
+
+userservice:
+  replicas: 2
+
+contacts:
+  replicas: 2
 
 ledgerWriter:
   replicas: 2
-  resources:
-    requests:
-      cpu: "250m"
-      memory: "256Mi"
-    limits:
-      cpu: "500m"
-      memory: "512Mi"
+
+balanceReader:
+  replicas: 2
+
+transactionHistory:
+  replicas: 2
+
+loadgenerator:
+  enabled: true
+  replicas: 1
+
+dbInit:
+  enabled: true
+  loadDemoData: true
