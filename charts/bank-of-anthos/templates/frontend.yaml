@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    app: frontend
+    team: frontend
+    tier: web
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.targetPort }}
+  selector:
+    app: frontend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    app: frontend
+    team: frontend
+    tier: web
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: frontend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-of-anthos.labels" . | nindent 8 }}
+        app: frontend
+        team: frontend
+        tier: web
+    spec:
+      serviceAccountName: {{ include "bank-of-anthos.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: front
+          image: {{ include "bank-of-anthos.image" (dict "root" . "image" .Values.frontend.image) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.service.targetPort }}
+          env:
+            - name: VERSION
+              value: {{ .Values.frontend.image.tag | quote }}
+            - name: PORT
+              value: {{ .Values.frontend.service.targetPort | quote }}
+            - name: ENABLE_TRACING
+              value: {{ .Values.global.enableTracing | quote }}
+            - name: SCHEME
+              value: http
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel | quote }}
+            - name: DEFAULT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-data-config
+                  key: DEMO_LOGIN_USERNAME
+            - name: DEFAULT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-data-config
+                  key: DEMO_LOGIN_PASSWORD
+            - name: REGISTERED_OAUTH_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: oauth-config
+                  key: DEMO_OAUTH_CLIENT_ID
+                  optional: true
+            - name: ALLOWED_OAUTH_REDIRECT_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: oauth-config
+                  key: DEMO_OAUTH_REDIRECT_URI
+                  optional: true
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: service-api-config
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.frontend.service.targetPort }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.frontend.service.targetPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: publickey
+              mountPath: /tmp/.ssh
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: publickey
+          secret:
+            secretName: {{ include "bank-of-anthos.jwtSecretName" . }}
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
