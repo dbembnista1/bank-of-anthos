@@ -4,18 +4,18 @@ metadata:
   name: bank-of-anthos-dev
   namespace: argocd
 spec:
-  project: default
+  project: {{ .Values.project }}
   source:
-    repoURL: 'https://github.com/dbembnista1/aws-eks-bank-of-anthos.git'
+    repoURL: {{ required "repoURL must be set (root App helm parameter from Terraform argocd_repo_url)" .Values.repoURL | quote }}
     path: charts/bank-of-anthos
-    targetRevision: HEAD
+    targetRevision: {{ .Values.targetRevision | quote }}
     helm:
       valueFiles:
         - values.yaml
         - values-dev.yaml
   destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: bank-of-anthos-dev
+    server: {{ .Values.destinationServer | quote }}
+    namespace: {{ .Values.destinationNamespace | quote }}
   syncPolicy:
     automated:
       prune: true

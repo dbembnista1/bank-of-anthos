@@ -53,7 +53,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 ServiceAccount name used by app pods.
 */}}
 {{- define "bank-of-anthos.serviceAccountName" -}}
-{{- default "bank-of-anthos" .Values.serviceAccount.name }}
+{{- if and .Values.serviceAccount .Values.serviceAccount.name -}}
+{{- .Values.serviceAccount.name -}}
+{{- else -}}
+bank-of-anthos
+{{- end -}}
 {{- end }}
 
 {{/*

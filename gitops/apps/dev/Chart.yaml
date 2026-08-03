@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gitops-apps-dev
+description: Argo CD Application manifest(s) for the Bank of Anthos DEV environment
+type: application
+version: 0.1.0

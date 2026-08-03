@@ -14,6 +14,10 @@ global:
   logLevel: info
   enableTracing: "false"
 
+# Kubernetes ServiceAccount used by app pods (no GKE Workload Identity annotation).
+serviceAccount:
+  name: bank-of-anthos
+
 # Secret names expected in the namespace (created by External Secrets Operator — not by this chart).
 secrets:
   jwt:

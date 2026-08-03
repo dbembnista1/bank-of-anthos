@@ -103,3 +103,18 @@ output "rds_master_user_secret_arns" {
   description = "Map of logical DB name => Secrets Manager ARN (managed master password; for ESO)"
   value       = module.rds.master_user_secret_arns
 }
+
+output "argocd_namespace" {
+  description = "Namespace where Argo CD runs (port-forward svc/argocd-server)"
+  value       = module.argocd.namespace
+}
+
+output "argocd_app_project_name" {
+  description = "AppProject name for Bank of Anthos Applications"
+  value       = module.argocd.app_project_name
+}
+
+output "argocd_repo_secret_name" {
+  description = "Secret with private Git credentials for Argo CD"
+  value       = module.argocd.repo_secret_name
+}

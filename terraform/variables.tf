@@ -217,3 +217,39 @@ variable "rds_skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+variable "argocd_repo_url" {
+  description = "Git repository URL for Argo CD App-of-Apps and child Applications"
+  type        = string
+  default     = "https://github.com/dbembnista1/bank-of-anthos.git"
+}
+
+variable "argocd_gh_username" {
+  description = "GitHub username for Argo CD HTTPS clone (x-access-token with a PAT)"
+  type        = string
+  default     = "x-access-token"
+}
+
+variable "argocd_gh_token" {
+  description = "GitHub PAT (contents:read) for private repo access. Set via TF_VAR_argocd_gh_token — do not commit."
+  type        = string
+  sensitive   = true
+}
+
+variable "argocd_target_revision" {
+  description = "Git revision synced by root App-of-Apps"
+  type        = string
+  default     = "main"
+}
+
+variable "argocd_chart_version" {
+  description = "argo-cd Helm chart version"
+  type        = string
+  default     = "7.8.14"
+}
+
+variable "argocd_apps_chart_version" {
+  description = "argocd-apps Helm chart version (AppProject + root Applications)"
+  type        = string
+  default     = "2.0.2"
+}

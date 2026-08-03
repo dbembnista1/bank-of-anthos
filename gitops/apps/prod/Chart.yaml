@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gitops-apps-prod
+description: Argo CD Application manifest(s) for the Bank of Anthos PROD environment
+type: application
+version: 0.1.0
