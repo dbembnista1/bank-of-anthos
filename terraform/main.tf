@@ -94,3 +94,15 @@ module "rds" {
   deletion_protection     = var.rds_deletion_protection
   skip_final_snapshot     = var.rds_skip_final_snapshot
 }
+
+module "argocd" {
+  source = "./modules/argocd-bootstrap"
+
+  repo_url    = var.argocd_repo_url
+  gh_token    = var.argocd_gh_token
+  gh_username = var.argocd_gh_username
+
+  target_revision    = var.argocd_target_revision
+  chart_version      = var.argocd_chart_version
+  apps_chart_version = var.argocd_apps_chart_version
+}

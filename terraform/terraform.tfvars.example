@@ -41,3 +41,10 @@ rds_multi_az                  = false
 rds_backup_retention_period   = 1
 rds_deletion_protection       = false
 rds_skip_final_snapshot       = true
+
+# Argo CD (bootstrap via Helm; App-of-Apps roots sync gitops/apps/{dev,prod})
+# Set the PAT in the shell — never put it in this file or commit it:
+#   $env:TF_VAR_argocd_gh_token = "ghp_..."
+argocd_repo_url         = "https://github.com/dbembnista1/aws-eks-bank-of-anthos.git"
+argocd_target_revision  = "main"
+# argocd_chart_version and argocd_apps_chart_version use module defaults unless overridden
