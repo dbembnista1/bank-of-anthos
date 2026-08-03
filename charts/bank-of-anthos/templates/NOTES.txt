@@ -1,0 +1,44 @@
+Bank of Anthos (AWS / EKS umbrella chart)
+==========================================
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+
+Before pods become Ready you must provide:
+
+1. ECR images
+   - Set global.imageRegistry to your account registry URL
+   - Set each service image.tag (CI updates these in phase 9)
+
+2. RDS endpoints
+   - database.accountsDb.host / database.ledgerDb.host
+     from terraform output rds_instance_endpoints
+
+3. Kubernetes Secrets (External Secrets Operator — phase 7)
+   - {{ .Values.secrets.jwt.name }}
+       keys: jwtRS256.key, jwtRS256.key.pub
+   - {{ .Values.secrets.accountsDb.name }}
+       keys: username, password, uri
+       (uri = postgresql://user:pass@host:port/dbname)
+   - {{ .Values.secrets.ledgerDb.name }}
+       keys: username, password
+
+4. DB schema seed (this chart)
+   - dbInit.enabled={{ .Values.dbInit.enabled }}
+   - Jobs: populate-accounts-db, populate-ledger-db
+   - After a successful seed, set dbInit.enabled=false (or delete the Jobs)
+     so ArgoCD does not keep Failed Jobs around on re-sync.
+
+Demo login (when loadDemoData=true):
+  username: testuser
+  password: bankofanthos
+
+Frontend Service:
+  type={{ .Values.frontend.service.type }}  port={{ .Values.frontend.service.port }}
+  (ALB / Ingress is added in a later platform phase)
+
+Verify:
+  kubectl get pods,svc,jobs -n {{ .Release.Namespace }}
+  kubectl logs -n {{ .Release.Namespace }} job/populate-accounts-db
+  kubectl logs -n {{ .Release.Namespace }} job/populate-ledger-db
