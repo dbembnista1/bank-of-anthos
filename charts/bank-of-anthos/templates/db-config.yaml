@@ -1,0 +1,36 @@
+{{- /*
+DB connection ConfigMaps — non-secret fields only.
+Passwords and full URIs with credentials come from Secrets
+(secrets.accountsDb / secrets.ledgerDb) via External Secrets (phase 7).
+Upstream BoA put passwords in these ConfigMaps; we intentionally do not.
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: accounts-db-config
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    team: accounts
+    tier: db
+data:
+  POSTGRES_DB: {{ .Values.database.accountsDb.name | quote }}
+  POSTGRES_USER: {{ .Values.database.accountsDb.username | quote }}
+  # Host/port for Jobs and for building connection strings outside this ConfigMap.
+  ACCOUNTS_DB_HOST: {{ .Values.database.accountsDb.host | quote }}
+  ACCOUNTS_DB_PORT: {{ .Values.database.accountsDb.port | quote }}
+  # ACCOUNTS_DB_URI (with password) is supplied from Secret accounts-db-credentials.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-db-config
+  labels:
+    {{- include "bank-of-anthos.labels" . | nindent 4 }}
+    team: ledger
+    tier: db
+data:
+  POSTGRES_DB: {{ .Values.database.ledgerDb.name | quote }}
+  POSTGRES_USER: {{ .Values.database.ledgerDb.username | quote }}
+  SPRING_DATASOURCE_URL: {{ printf "jdbc:postgresql://%s:%v/%s" .Values.database.ledgerDb.host .Values.database.ledgerDb.port .Values.database.ledgerDb.name | quote }}
+  SPRING_DATASOURCE_USERNAME: {{ .Values.database.ledgerDb.username | quote }}
+  # SPRING_DATASOURCE_PASSWORD / POSTGRES_PASSWORD from Secret ledger-db-credentials.
