@@ -4,18 +4,18 @@ metadata:
   name: bank-of-anthos-prod
   namespace: argocd
 spec:
-  project: bank-of-anthos
+  project: {{ .Values.project }}
   source:
-    repoURL: https://github.com/dbembnista1/aws-eks-bank-of-anthos.git
+    repoURL: {{ required "repoURL must be set (root App helm parameter from Terraform argocd_repo_url)" .Values.repoURL | quote }}
     path: charts/bank-of-anthos
-    targetRevision: main
+    targetRevision: {{ .Values.targetRevision | quote }}
     helm:
       valueFiles:
         - values.yaml
         - values-prod.yaml
   destination:
-    server: https://kubernetes.default.svc
-    namespace: bank-of-anthos-prod
+    server: {{ .Values.destinationServer | quote }}
+    namespace: {{ .Values.destinationNamespace | quote }}
   # Manual sync for prod (demo/lab: promote deliberately from the Argo CD UI/CLI).
   syncPolicy:
     syncOptions:

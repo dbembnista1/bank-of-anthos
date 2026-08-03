@@ -221,7 +221,7 @@ variable "rds_skip_final_snapshot" {
 variable "argocd_repo_url" {
   description = "Git repository URL for Argo CD App-of-Apps and child Applications"
   type        = string
-  default     = "https://github.com/dbembnista1/aws-eks-bank-of-anthos.git"
+  default     = "https://github.com/dbembnista1/bank-of-anthos.git"
 }
 
 variable "argocd_gh_username" {

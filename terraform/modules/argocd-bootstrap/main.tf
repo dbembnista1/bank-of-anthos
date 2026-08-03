@@ -102,6 +102,19 @@ resource "helm_release" "argocd_apps" {
             repoURL        = var.repo_url
             path           = var.gitops_dev_path
             targetRevision = var.target_revision
+            # Inject fork-specific URL so Application templates stay free of hardcoded remotes.
+            helm = {
+              parameters = [
+                {
+                  name  = "repoURL"
+                  value = var.repo_url
+                },
+                {
+                  name  = "targetRevision"
+                  value = var.target_revision
+                },
+              ]
+            }
           }
           destination = {
             server    = local.in_cluster_server
@@ -124,6 +137,18 @@ resource "helm_release" "argocd_apps" {
             repoURL        = var.repo_url
             path           = var.gitops_prod_path
             targetRevision = var.target_revision
+            helm = {
+              parameters = [
+                {
+                  name  = "repoURL"
+                  value = var.repo_url
+                },
+                {
+                  name  = "targetRevision"
+                  value = var.target_revision
+                },
+              ]
+            }
           }
           destination = {
             server    = local.in_cluster_server
