@@ -27,17 +27,17 @@ secrets:
   ledgerDb:
     name: ledger-db-credentials
 
-# RDS hosts — override per environment in values-dev.yaml / values-prod.yaml
-# from terraform output rds_instance_endpoints[<env>]. Passwords via secrets.* (ESO).
+# RDS hosts — overridden at sync by Argo Helm parameters from Terraform (per env).
+# Passwords stay in AWS Secrets Manager (RDS-managed); ESO syncs into the cluster.
 # db names use underscores — RDS CreateDBInstance forbids hyphens.
 database:
   accountsDb:
-    host: "PLACEHOLDER_SET_IN_VALUES_ENV"
+    host: "SET_BY_ARGO_FROM_TERRAFORM"
     port: 5432
     name: "accounts_db"
     username: "accounts_admin"
   ledgerDb:
-    host: "PLACEHOLDER_SET_IN_VALUES_ENV"
+    host: "SET_BY_ARGO_FROM_TERRAFORM"
     port: 5432
     name: "ledger_db"
     username: "ledger_admin"

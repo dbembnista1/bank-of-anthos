@@ -86,7 +86,13 @@ module "rds" {
   subnet_ids                 = module.vpc.private_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
 
-  instances               = local.rds_instances
+  instances = {
+    for k, v in local.rds_instances : k => {
+      identifier = v.identifier
+      db_name    = v.db_name
+      username   = v.username
+    }
+  }
   engine_version          = var.rds_engine_version
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_allocated_storage
@@ -124,4 +130,6 @@ module "argocd" {
   destination_namespaces     = local.argocd_destination_namespaces
   gitops_app_paths           = local.gitops_app_paths
   external_secrets_namespace = var.eso_namespace
+  database_hosts             = local.database_hosts
+  database_secret_arns       = local.database_secret_arns
 }

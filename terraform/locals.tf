@@ -15,6 +15,8 @@ locals {
   rds_instances = {
     for pair in setproduct(var.enabled_environments, keys(local.app_db_services)) :
     "${pair[0]}-${pair[1]}" => {
+      env        = pair[0]
+      service    = pair[1]
       identifier = "${var.rds_name_prefix}-${pair[0]}-${pair[1]}"
       db_name    = local.app_db_services[pair[1]].db_name
       username   = local.app_db_services[pair[1]].username
@@ -36,8 +38,25 @@ locals {
     env => "gitops/apps/${env}"
   }
 
-  # ESO IRSA may read RDS-managed secrets + JWT secret created by scripts/bootstrap-jwt.ps1.
-  # Secrets Manager ARNs include a random suffix → allow name-* for JWT.
+  # Nested maps for Argo Helm parameter injection (hosts + RDS-managed secret ARNs).
+  # Passwords stay in Secrets Manager only — Terraform never reads secret payloads.
+  database_hosts = {
+    for env in var.enabled_environments :
+    env => {
+      accounts = module.rds.instance_endpoints["${env}-accounts"]
+      ledger   = module.rds.instance_endpoints["${env}-ledger"]
+    }
+  }
+
+  database_secret_arns = {
+    for env in var.enabled_environments :
+    env => {
+      accounts = module.rds.master_user_secret_arns["${env}-accounts"]
+      ledger   = module.rds.master_user_secret_arns["${env}-ledger"]
+    }
+  }
+
+  # ESO IRSA: JWT (bootstrap script) + RDS-managed master secrets (ARN only in state).
   jwt_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
 
   eso_secrets_manager_arns = concat(

@@ -38,6 +38,24 @@ function Test-CommandExists {
     return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
+# AWS CLI / openssl write to stderr for non-fatal cases; with ErrorActionPreference=Stop
+# PowerShell turns that into a terminating NativeCommandError. Run natives under Continue.
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Command
+    )
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Command
+        return $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+}
+
 foreach ($cmd in @("openssl", "aws")) {
     if (-not (Test-CommandExists $cmd)) {
         throw "Required command not found: $cmd. Install OpenSSL (e.g. Git for Windows) and AWS CLI v2."
@@ -47,17 +65,27 @@ foreach ($cmd in @("openssl", "aws")) {
 # Skip when secret already has a current version (idempotent lab setup).
 $secretExists = $false
 $hasValue = $false
-aws secretsmanager describe-secret --secret-id $SecretName --region $Region 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
+
+$describeExit = Invoke-Native {
+    aws secretsmanager describe-secret --secret-id $SecretName --region $Region 2>$null | Out-Null
+}
+if ($describeExit -eq 0) {
     $secretExists = $true
-    $meta = aws secretsmanager describe-secret --secret-id $SecretName --region $Region --output json | ConvertFrom-Json
+    $metaJson = $null
+    $metaExit = Invoke-Native {
+        $script:metaJson = aws secretsmanager describe-secret --secret-id $SecretName --region $Region --output json
+    }
+    if ($metaExit -ne 0 -or [string]::IsNullOrWhiteSpace($metaJson)) {
+        throw "describe-secret succeeded once then failed for '$SecretName'."
+    }
+    $meta = $metaJson | ConvertFrom-Json
     if ($null -ne $meta.VersionIdsToStages -and $meta.VersionIdsToStages.PSObject.Properties.Count -gt 0) {
         $hasValue = $true
     }
 }
 
 if ($hasValue -and -not $ForceRotate) {
-    Write-Host "Secret '$SecretName' already has a value. Skipping (use -ForceRotate to replace)."
+    Write-Host "Secret '$SecretName' already has a value. Skipping (use -ForceRotate)."
     exit 0
 }
 
@@ -69,11 +97,11 @@ try {
     $pubPath = Join-Path $workDir "jwtRS256.key.pub"
     $jsonPath = Join-Path $workDir "secret.json"
 
-    & openssl genrsa -out $keyPath 4096
-    if ($LASTEXITCODE -ne 0) { throw "openssl genrsa failed" }
+    $genExit = Invoke-Native { openssl genrsa -out $keyPath 4096 }
+    if ($genExit -ne 0) { throw "openssl genrsa failed (exit $genExit)" }
 
-    & openssl rsa -in $keyPath -outform PEM -pubout -out $pubPath
-    if ($LASTEXITCODE -ne 0) { throw "openssl rsa -pubout failed" }
+    $pubExit = Invoke-Native { openssl rsa -in $keyPath -outform PEM -pubout -out $pubPath }
+    if ($pubExit -ne 0) { throw "openssl rsa -pubout failed (exit $pubExit)" }
 
     # Keys must match the umbrella chart Kubernetes Secret jwt-key.
     $payload = [ordered]@{
@@ -88,24 +116,33 @@ try {
     $fileUri = "file://" + ($jsonPath -replace "\\", "/")
 
     if (-not $secretExists) {
-        aws secretsmanager create-secret `
-            --name $SecretName `
-            --description "Bank of Anthos JWT RS256 keypair (synced to K8s via External Secrets)" `
-            --secret-string $fileUri `
-            --region $Region | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "create-secret failed" }
+        $createExit = Invoke-Native {
+            aws secretsmanager create-secret `
+                --name $SecretName `
+                --description "Bank of Anthos JWT RS256 keypair (synced to K8s via External Secrets)" `
+                --secret-string $fileUri `
+                --region $Region | Out-Null
+        }
+        if ($createExit -ne 0) { throw "create-secret failed (exit $createExit)" }
         Write-Host "Created Secrets Manager secret: $SecretName"
     }
     else {
-        aws secretsmanager put-secret-value `
-            --secret-id $SecretName `
-            --secret-string $fileUri `
-            --region $Region | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "put-secret-value failed" }
+        $putExit = Invoke-Native {
+            aws secretsmanager put-secret-value `
+                --secret-id $SecretName `
+                --secret-string $fileUri `
+                --region $Region | Out-Null
+        }
+        if ($putExit -ne 0) { throw "put-secret-value failed (exit $putExit)" }
         Write-Host "Updated Secrets Manager secret: $SecretName"
     }
 
-    $arn = aws secretsmanager describe-secret --secret-id $SecretName --region $Region --query ARN --output text
+    $arn = $null
+    $arnExit = Invoke-Native {
+        $script:arn = aws secretsmanager describe-secret --secret-id $SecretName --region $Region --query ARN --output text
+    }
+    if ($arnExit -ne 0) { throw "failed to read secret ARN (exit $arnExit)" }
+
     Write-Host "ARN: $arn"
     Write-Host "Local PEM files removed with temp dir. Next: External Secrets syncs this into jwt-key."
 }

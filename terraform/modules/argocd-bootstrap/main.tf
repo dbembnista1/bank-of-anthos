@@ -27,7 +27,7 @@ locals {
         repoURL        = var.repo_url
         path           = var.gitops_app_paths[env]
         targetRevision = var.target_revision
-        # Inject fork-specific URL so Application templates stay free of hardcoded remotes.
+        # Inject fork URL + RDS hosts so Git stays free of account-specific placeholders.
         helm = {
           parameters = [
             {
@@ -37,6 +37,22 @@ locals {
             {
               name  = "targetRevision"
               value = var.target_revision
+            },
+            {
+              name  = "database.accountsDb.host"
+              value = var.database_hosts[env].accounts
+            },
+            {
+              name  = "database.ledgerDb.host"
+              value = var.database_hosts[env].ledger
+            },
+            {
+              name  = "secrets.accountsDb.remoteKey"
+              value = var.database_secret_arns[env].accounts
+            },
+            {
+              name  = "secrets.ledgerDb.remoteKey"
+              value = var.database_secret_arns[env].ledger
             },
           ]
         }

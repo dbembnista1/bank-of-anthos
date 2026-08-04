@@ -11,9 +11,9 @@ Before pods become Ready you must provide:
    - Set global.imageRegistry to your account registry URL
    - Set each service image.tag (CI updates these)
 
-2. RDS endpoints (per environment — from terraform output rds_instance_endpoints)
+2. RDS endpoints (injected by Terraform → Argo Helm parameters at sync)
    - database.accountsDb.host / database.ledgerDb.host
-     set in values-dev.yaml or values-prod.yaml
+     (no manual paste into values-*.yaml)
 
 3. Kubernetes Secrets (External Secrets Operator)
    - {{ .Values.secrets.jwt.name }}

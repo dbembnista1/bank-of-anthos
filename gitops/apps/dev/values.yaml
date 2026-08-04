@@ -1,7 +1,18 @@
 # Defaults for helm template / local render.
-# Live cluster values come from root-dev helm.parameters (Terraform argocd_repo_url).
+# Live cluster: root-dev helm.parameters from Terraform
+# (repoURL, targetRevision, database.*.host, secrets.*.remoteKey).
 repoURL: ""
 targetRevision: main
 project: bank-of-anthos
 destinationServer: https://kubernetes.default.svc
 destinationNamespace: bank-of-anthos-dev
+database:
+  accountsDb:
+    host: ""
+  ledgerDb:
+    host: ""
+secrets:
+  accountsDb:
+    remoteKey: ""
+  ledgerDb:
+    remoteKey: ""

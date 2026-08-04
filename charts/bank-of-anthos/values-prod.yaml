@@ -1,15 +1,8 @@
 # Overrides for PROD environment (merged on top of values.yaml by ArgoCD).
-# Namespace: bank-of-anthos-prod (shared EKS). Enable via terraform enabled_environments = [..., "prod"].
+# Namespace: bank-of-anthos-prod. Enable via terraform enabled_environments = [..., "prod"].
 # HA: replicas >= 2 for stateless services.
 #
-# After terraform apply (with prod enabled), set database.*.host from:
-#   terraform output -json rds_instance_endpoints  →  .prod.accounts / .prod.ledger
-
-database:
-  accountsDb:
-    host: "PLACEHOLDER_PROD_ACCOUNTS_RDS_ENDPOINT"
-  ledgerDb:
-    host: "PLACEHOLDER_PROD_LEDGER_RDS_ENDPOINT"
+# database.*.host is injected by Terraform via Argo Helm parameters (not pasted here).
 
 frontend:
   replicas: 3

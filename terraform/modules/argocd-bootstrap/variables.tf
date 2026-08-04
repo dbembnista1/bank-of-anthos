@@ -71,3 +71,21 @@ variable "external_secrets_namespace" {
   type        = string
   default     = "external-secrets"
 }
+
+variable "database_hosts" {
+  description = "Map of env => { accounts, ledger } RDS hostnames injected into App-of-Apps Helm parameters"
+  type = map(object({
+    accounts = string
+    ledger   = string
+  }))
+  default = {}
+}
+
+variable "database_secret_arns" {
+  description = "Map of env => { accounts, ledger } RDS-managed Secrets Manager ARNs for ExternalSecret remoteRef (not secret payloads)"
+  type = map(object({
+    accounts = string
+    ledger   = string
+  }))
+  default = {}
+}
