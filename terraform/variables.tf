@@ -220,6 +220,36 @@ variable "rds_skip_final_snapshot" {
   default     = true
 }
 
+variable "jwt_secret_name" {
+  description = "Secrets Manager name used by scripts/bootstrap-jwt.ps1 (IRSA ARN pattern for ESO)"
+  type        = string
+  default     = "bank-of-anthos-jwt"
+}
+
+variable "eso_namespace" {
+  description = "Namespace for External Secrets Operator"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "eso_chart_version" {
+  description = "external-secrets Helm chart version"
+  type        = string
+  default     = "0.14.4"
+}
+
+variable "eso_service_account_name" {
+  description = "ESO ServiceAccount name (IRSA + ClusterSecretStore serviceAccountRef)"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "eso_iam_role_name" {
+  description = "IAM role name for External Secrets Operator IRSA"
+  type        = string
+  default     = "bank-of-anthos-external-secrets"
+}
+
 variable "argocd_repo_url" {
   description = "Git repository URL for Argo CD App-of-Apps and child Applications"
   type        = string

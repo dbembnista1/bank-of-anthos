@@ -37,6 +37,8 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -93,6 +95,19 @@ module "rds" {
   backup_retention_period = var.rds_backup_retention_period
   deletion_protection     = var.rds_deletion_protection
   skip_final_snapshot     = var.rds_skip_final_snapshot
+}
+
+module "external_secrets" {
+  source = "./modules/external-secrets"
+
+  namespace            = var.eso_namespace
+  chart_version        = var.eso_chart_version
+  service_account_name = var.eso_service_account_name
+  iam_role_name        = var.eso_iam_role_name
+
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider        = module.eks.oidc_provider
+  secrets_manager_arns = local.eso_secrets_manager_arns
 }
 
 module "argocd" {

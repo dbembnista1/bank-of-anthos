@@ -50,6 +50,10 @@ rds_backup_retention_period   = 1
 rds_deletion_protection       = false
 rds_skip_final_snapshot       = true
 
+# External Secrets Operator (Helm chart + IRSA). ClusterSecretStore/ExternalSecret come via GitOps.
+# eso_chart_version / eso_namespace / eso_iam_role_name use defaults unless overridden.
+# After apply: .\scripts\bootstrap-jwt.ps1  (JWT secret name must match jwt_secret_name)
+
 # Argo CD (bootstrap via Helm; root App-of-Apps only for enabled_environments)
 # Set the PAT in the shell — never put it in this file or commit it:
 #   $env:TF_VAR_argocd_gh_token = "ghp_..."

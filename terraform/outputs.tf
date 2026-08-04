@@ -139,6 +139,26 @@ output "rds_master_user_secret_arns" {
   }
 }
 
+output "eso_namespace" {
+  description = "Namespace where External Secrets Operator runs"
+  value       = module.external_secrets.namespace
+}
+
+output "eso_service_account_name" {
+  description = "ESO ServiceAccount name for ClusterSecretStore IRSA reference"
+  value       = module.external_secrets.service_account_name
+}
+
+output "eso_iam_role_arn" {
+  description = "IAM role ARN used by ESO via IRSA"
+  value       = module.external_secrets.iam_role_arn
+}
+
+output "jwt_secret_name" {
+  description = "Expected Secrets Manager name for JWT (scripts/bootstrap-jwt.ps1)"
+  value       = var.jwt_secret_name
+}
+
 output "argocd_namespace" {
   description = "Namespace where Argo CD runs (port-forward svc/argocd-server)"
   value       = module.argocd.namespace

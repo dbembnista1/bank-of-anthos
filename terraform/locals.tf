@@ -30,4 +30,13 @@ locals {
     for env in var.enabled_environments :
     env => "gitops/apps/${env}"
   }
+
+  # ESO IRSA may read RDS-managed secrets + JWT secret created by scripts/bootstrap-jwt.ps1.
+  # Secrets Manager ARNs include a random suffix → allow name-* for JWT.
+  jwt_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
+
+  eso_secrets_manager_arns = concat(
+    values(module.rds.master_user_secret_arns),
+    [local.jwt_secret_arn_pattern]
+  )
 }
