@@ -135,6 +135,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: populate-accounts-db
+  annotations:
+    # Job pod template is immutable; replace instead of patch on sync.
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
   labels:
     {{- include "bank-of-anthos.labels" . | nindent 4 }}
     app: populate-accounts-db
