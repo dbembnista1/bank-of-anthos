@@ -1,6 +1,6 @@
 # Defaults for helm template / local render.
 # Live cluster: root-dev helm.parameters from Terraform
-# (repoURL, targetRevision, database.*.host, secrets.*.remoteKey).
+# (repoURL, targetRevision, database.*.host, secrets.*.remoteKey → secrets App).
 repoURL: ""
 targetRevision: main
 project: bank-of-anthos

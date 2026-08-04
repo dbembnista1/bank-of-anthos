@@ -235,7 +235,7 @@ variable "eso_namespace" {
 variable "eso_chart_version" {
   description = "external-secrets Helm chart version"
   type        = string
-  default     = "0.14.4"
+  default     = "0.17.0"
 }
 
 variable "eso_service_account_name" {
