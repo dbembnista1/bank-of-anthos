@@ -117,10 +117,11 @@ module "argocd" {
   gh_token    = var.argocd_gh_token
   gh_username = var.argocd_gh_username
 
-  target_revision        = var.argocd_target_revision
-  chart_version          = var.argocd_chart_version
-  apps_chart_version     = var.argocd_apps_chart_version
-  enabled_environments   = var.enabled_environments
-  destination_namespaces = local.app_namespaces
-  gitops_app_paths       = local.gitops_app_paths
+  target_revision            = var.argocd_target_revision
+  chart_version              = var.argocd_chart_version
+  apps_chart_version         = var.argocd_apps_chart_version
+  enabled_environments       = var.enabled_environments
+  destination_namespaces     = local.argocd_destination_namespaces
+  gitops_app_paths           = local.gitops_app_paths
+  external_secrets_namespace = var.eso_namespace
 }

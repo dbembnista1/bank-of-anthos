@@ -21,10 +21,15 @@ locals {
     }
   }
 
-  # Kubernetes namespaces for enabled app environments (Argo destinations).
+  # Kubernetes namespaces for enabled app environments + ESO (ClusterSecretStore App destination).
   app_namespaces = [
     for env in var.enabled_environments : "bank-of-anthos-${env}"
   ]
+
+  argocd_destination_namespaces = concat(
+    local.app_namespaces,
+    [var.eso_namespace]
+  )
 
   gitops_app_paths = {
     for env in var.enabled_environments :

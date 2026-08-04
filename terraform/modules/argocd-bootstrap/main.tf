@@ -17,7 +17,7 @@ locals {
   )
 
   # One root App-of-Apps per enabled environment (dev / prod).
-  root_applications = {
+  env_root_applications = {
     for env in var.enabled_environments :
     "root-${env}" => {
       namespace  = var.namespace
@@ -54,6 +54,36 @@ locals {
       }
     }
   }
+
+  # ClusterSecretStore (cluster-scoped) — always synced when Argo CD is installed.
+  platform_root_applications = {
+    root-platform-external-secrets = {
+      namespace  = var.namespace
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      project    = var.app_project_name
+      source = {
+        repoURL        = var.repo_url
+        path           = var.gitops_platform_external_secrets_path
+        targetRevision = var.target_revision
+      }
+      destination = {
+        server    = local.in_cluster_server
+        namespace = var.external_secrets_namespace
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true",
+        ]
+      }
+    }
+  }
+
+  root_applications = merge(local.env_root_applications, local.platform_root_applications)
 }
 
 resource "helm_release" "argocd" {

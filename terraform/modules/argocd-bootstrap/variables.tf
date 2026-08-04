@@ -59,3 +59,15 @@ variable "destination_namespaces" {
   description = "Kubernetes namespaces AppProject may deploy into (plus argocd for App-of-Apps)"
   type        = list(string)
 }
+
+variable "gitops_platform_external_secrets_path" {
+  description = "Repo path with ClusterSecretStore Helm chart"
+  type        = string
+  default     = "gitops/platform/external-secrets"
+}
+
+variable "external_secrets_namespace" {
+  description = "Destination namespace for the platform External Secrets App-of-Apps (ESO operator ns)"
+  type        = string
+  default     = "external-secrets"
+}
