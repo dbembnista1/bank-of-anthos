@@ -1,6 +1,14 @@
 # Overrides for DEV environment (merged on top of values.yaml by ArgoCD).
-# Resources come from values.yaml (upstream Bank of Anthos kubernetes-manifests).
-# Shared EKS cluster — namespace bank-of-anthos-dev.
+# Namespace: bank-of-anthos-dev (shared EKS). Enable via terraform enabled_environments.
+#
+# After terraform apply, set database.*.host from:
+#   terraform output -json rds_instance_endpoints  →  .dev.accounts / .dev.ledger
+
+database:
+  accountsDb:
+    host: "PLACEHOLDER_DEV_ACCOUNTS_RDS_ENDPOINT"
+  ledgerDb:
+    host: "PLACEHOLDER_DEV_LEDGER_RDS_ENDPOINT"
 
 frontend:
   replicas: 1

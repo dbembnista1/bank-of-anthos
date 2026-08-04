@@ -1,6 +1,6 @@
 # Default values for bank-of-anthos umbrella chart.
 # Environment overlays: values-dev.yaml / values-prod.yaml (merged by ArgoCD).
-# Image tags are updated by CI (phase 9). Passwords never live here — External Secrets (phase 7).
+# Image tags are updated by CI. Passwords never live here — External Secrets Operator.
 
 global:
   # Replace ACCOUNT_ID after terraform apply (ecr_repository_urls / aws account id).
@@ -27,22 +27,23 @@ secrets:
   ledgerDb:
     name: ledger-db-credentials
 
-# RDS hosts from terraform output rds_instance_endpoints (passwords via secrets.* above).
+# RDS hosts — override per environment in values-dev.yaml / values-prod.yaml
+# from terraform output rds_instance_endpoints[<env>]. Passwords via secrets.* (ESO).
 # db names use underscores — RDS CreateDBInstance forbids hyphens.
 database:
   accountsDb:
-    host: "PLACEHOLDER_ACCOUNTS_RDS_ENDPOINT"
+    host: "PLACEHOLDER_SET_IN_VALUES_ENV"
     port: 5432
     name: "accounts_db"
     username: "accounts_admin"
   ledgerDb:
-    host: "PLACEHOLDER_LEDGER_RDS_ENDPOINT"
+    host: "PLACEHOLDER_SET_IN_VALUES_ENV"
     port: 5432
     name: "ledger_db"
     username: "ledger_admin"
 
 # One-shot Jobs that apply upstream BoA SQL schema (+ optional demo data) to RDS.
-# Requires DB credentials Secrets to exist (phase 7). Safe to disable after first successful seed.
+# Requires DB credentials Secrets to exist. Safe to disable after first successful seed.
 dbInit:
   enabled: true
   image: "postgres:16-alpine"

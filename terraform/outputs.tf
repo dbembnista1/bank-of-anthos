@@ -74,34 +74,69 @@ output "ecr_registry_id" {
   value       = module.ecr.registry_id
 }
 
+output "enabled_environments" {
+  description = "App environments provisioned (RDS + Argo root Apps)"
+  value       = var.enabled_environments
+}
+
+output "app_namespaces" {
+  description = "Kubernetes namespaces for enabled app environments"
+  value       = local.app_namespaces
+}
+
 output "rds_security_group_id" {
   description = "Security group ID for RDS instances"
   value       = module.rds.security_group_id
 }
 
 output "rds_instance_endpoints" {
-  description = "Map of logical DB name => endpoint hostname (for Helm values)"
-  value       = module.rds.instance_endpoints
+  description = "Nested map env => { accounts, ledger } => endpoint hostname (for Helm values-*.yaml)"
+  value = {
+    for env in var.enabled_environments : env => {
+      for svc in keys(local.app_db_services) :
+      svc => module.rds.instance_endpoints["${env}-${svc}"]
+    }
+  }
 }
 
 output "rds_instance_ports" {
-  description = "Map of logical DB name => port"
-  value       = module.rds.instance_ports
+  description = "Nested map env => { accounts, ledger } => port"
+  value = {
+    for env in var.enabled_environments : env => {
+      for svc in keys(local.app_db_services) :
+      svc => module.rds.instance_ports["${env}-${svc}"]
+    }
+  }
 }
 
 output "rds_db_names" {
-  description = "Map of logical DB name => PostgreSQL database name"
-  value       = module.rds.db_names
+  description = "Nested map env => { accounts, ledger } => PostgreSQL database name"
+  value = {
+    for env in var.enabled_environments : env => {
+      for svc in keys(local.app_db_services) :
+      svc => module.rds.db_names["${env}-${svc}"]
+    }
+  }
 }
 
 output "rds_master_usernames" {
-  description = "Map of logical DB name => master username"
-  value       = module.rds.master_usernames
+  description = "Nested map env => { accounts, ledger } => master username"
+  value = {
+    for env in var.enabled_environments : env => {
+      for svc in keys(local.app_db_services) :
+      svc => module.rds.master_usernames["${env}-${svc}"]
+    }
+  }
 }
 
 output "rds_master_user_secret_arns" {
-  description = "Map of logical DB name => Secrets Manager ARN (managed master password; for ESO)"
-  value       = module.rds.master_user_secret_arns
+  description = "Nested map env => { accounts, ledger } => Secrets Manager ARN (for ESO)"
+  value = {
+    for env in var.enabled_environments : env => {
+      for svc in keys(local.app_db_services) :
+      svc => module.rds.master_user_secret_arns["${env}-${svc}"]
+    }
+  }
 }
 
 output "argocd_namespace" {

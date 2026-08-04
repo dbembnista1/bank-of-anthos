@@ -45,20 +45,17 @@ variable "app_project_name" {
   default     = "bank-of-anthos"
 }
 
-variable "gitops_dev_path" {
-  description = "Repo path with Application manifests for the dev environment"
-  type        = string
-  default     = "gitops/apps/dev"
+variable "gitops_app_paths" {
+  description = "Map of enabled environment name => repo path with Application manifests"
+  type        = map(string)
 }
 
-variable "gitops_prod_path" {
-  description = "Repo path with Application manifests for the prod environment"
-  type        = string
-  default     = "gitops/apps/prod"
+variable "enabled_environments" {
+  description = "App environments that get a root App-of-Apps (must match keys in gitops_app_paths)"
+  type        = list(string)
 }
 
 variable "destination_namespaces" {
   description = "Kubernetes namespaces AppProject may deploy into (plus argocd for App-of-Apps)"
   type        = list(string)
-  default     = ["bank-of-anthos-dev", "bank-of-anthos-prod"]
 }

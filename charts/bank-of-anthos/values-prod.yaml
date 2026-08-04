@@ -1,6 +1,15 @@
 # Overrides for PROD environment (merged on top of values.yaml by ArgoCD).
-# Resources come from values.yaml (upstream Bank of Anthos kubernetes-manifests).
-# HA: replicas >= 2 for stateless services. Shared EKS — namespace bank-of-anthos-prod.
+# Namespace: bank-of-anthos-prod (shared EKS). Enable via terraform enabled_environments = [..., "prod"].
+# HA: replicas >= 2 for stateless services.
+#
+# After terraform apply (with prod enabled), set database.*.host from:
+#   terraform output -json rds_instance_endpoints  →  .prod.accounts / .prod.ledger
+
+database:
+  accountsDb:
+    host: "PLACEHOLDER_PROD_ACCOUNTS_RDS_ENDPOINT"
+  ledgerDb:
+    host: "PLACEHOLDER_PROD_LEDGER_RDS_ENDPOINT"
 
 frontend:
   replicas: 3

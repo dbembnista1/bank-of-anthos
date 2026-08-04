@@ -84,7 +84,7 @@ module "rds" {
   subnet_ids                 = module.vpc.private_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
 
-  instances               = var.rds_instances
+  instances               = local.rds_instances
   engine_version          = var.rds_engine_version
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_allocated_storage
@@ -102,7 +102,10 @@ module "argocd" {
   gh_token    = var.argocd_gh_token
   gh_username = var.argocd_gh_username
 
-  target_revision    = var.argocd_target_revision
-  chart_version      = var.argocd_chart_version
-  apps_chart_version = var.argocd_apps_chart_version
+  target_revision        = var.argocd_target_revision
+  chart_version          = var.argocd_chart_version
+  apps_chart_version     = var.argocd_apps_chart_version
+  enabled_environments   = var.enabled_environments
+  destination_namespaces = local.app_namespaces
+  gitops_app_paths       = local.gitops_app_paths
 }

@@ -9,13 +9,13 @@ Before pods become Ready you must provide:
 
 1. ECR images
    - Set global.imageRegistry to your account registry URL
-   - Set each service image.tag (CI updates these in phase 9)
+   - Set each service image.tag (CI updates these)
 
-2. RDS endpoints
+2. RDS endpoints (per environment — from terraform output rds_instance_endpoints)
    - database.accountsDb.host / database.ledgerDb.host
-     from terraform output rds_instance_endpoints
+     set in values-dev.yaml or values-prod.yaml
 
-3. Kubernetes Secrets (External Secrets Operator — phase 7)
+3. Kubernetes Secrets (External Secrets Operator)
    - {{ .Values.secrets.jwt.name }}
        keys: jwtRS256.key, jwtRS256.key.pub
    - {{ .Values.secrets.accountsDb.name }}
@@ -36,7 +36,7 @@ Demo login (when loadDemoData=true):
 
 Frontend Service:
   type={{ .Values.frontend.service.type }}  port={{ .Values.frontend.service.port }}
-  (ALB / Ingress is added in a later platform phase)
+  (ClusterIP — expose via Ingress / ALB Controller when ready)
 
 Verify:
   kubectl get pods,svc,jobs -n {{ .Release.Namespace }}

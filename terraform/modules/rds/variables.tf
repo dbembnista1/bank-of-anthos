@@ -29,7 +29,7 @@ variable "allowed_security_group_ids" {
 }
 
 variable "instances" {
-  description = "Map of RDS PostgreSQL instances to create (key = logical name, e.g. accounts / ledger)"
+  description = "Map of RDS PostgreSQL instances (key = \"<env>-<service>\", e.g. dev-accounts)"
   type = map(object({
     identifier = string
     db_name    = string
