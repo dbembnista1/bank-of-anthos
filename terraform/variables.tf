@@ -5,9 +5,32 @@ variable "aws_region" {
 }
 
 variable "environment" {
-  description = "Environment tag for shared platform resources (dev/prod split is at namespace level)"
+  description = "Environment tag for shared platform resources (VPC/EKS); app envs are var.enabled_environments"
   type        = string
   default     = "shared"
+}
+
+variable "enabled_environments" {
+  description = "App environments to provision (RDS + Argo root Apps). Shared EKS/VPC always exist. Default: dev only (FinOps)."
+  type        = list(string)
+  default     = ["dev"]
+
+  validation {
+    condition = alltrue([
+      for env in var.enabled_environments : contains(["dev", "prod"], env)
+    ])
+    error_message = "enabled_environments may only contain \"dev\" and/or \"prod\"."
+  }
+
+  validation {
+    condition     = length(var.enabled_environments) >= 1
+    error_message = "enabled_environments must include at least one environment."
+  }
+
+  validation {
+    condition     = length(var.enabled_environments) == length(toset(var.enabled_environments))
+    error_message = "enabled_environments must not contain duplicates."
+  }
 }
 
 variable "owner" {
@@ -149,27 +172,6 @@ variable "rds_name_prefix" {
   default     = "bank-of-anthos"
 }
 
-variable "rds_instances" {
-  description = "RDS PostgreSQL instances (accounts + ledger). db_name/username: letters, digits, underscore only (RDS constraint)."
-  type = map(object({
-    identifier = string
-    db_name    = string
-    username   = string
-  }))
-  default = {
-    accounts = {
-      identifier = "bank-of-anthos-accounts"
-      db_name    = "accounts_db"
-      username   = "accounts_admin"
-    }
-    ledger = {
-      identifier = "bank-of-anthos-ledger"
-      db_name    = "ledger_db"
-      username   = "ledger_admin"
-    }
-  }
-}
-
 variable "rds_engine_version" {
   description = "PostgreSQL engine version for all RDS instances"
   type        = string
@@ -216,6 +218,36 @@ variable "rds_skip_final_snapshot" {
   description = "Skip final snapshot on destroy (lab teardown convenience)"
   type        = bool
   default     = true
+}
+
+variable "jwt_secret_name" {
+  description = "Secrets Manager name used by scripts/bootstrap-jwt.ps1 (IRSA ARN pattern for ESO)"
+  type        = string
+  default     = "bank-of-anthos-jwt"
+}
+
+variable "eso_namespace" {
+  description = "Namespace for External Secrets Operator"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "eso_chart_version" {
+  description = "external-secrets Helm chart version"
+  type        = string
+  default     = "0.17.0"
+}
+
+variable "eso_service_account_name" {
+  description = "ESO ServiceAccount name (IRSA + ClusterSecretStore serviceAccountRef)"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "eso_iam_role_name" {
+  description = "IAM role name for External Secrets Operator IRSA"
+  type        = string
+  default     = "bank-of-anthos-external-secrets"
 }
 
 variable "argocd_repo_url" {

@@ -13,6 +13,12 @@ spec:
       valueFiles:
         - values.yaml
         - values-dev.yaml
+      # RDS hosts injected by Terraform via root-dev helm.parameters (stable Git, no placeholders).
+      parameters:
+        - name: database.accountsDb.host
+          value: {{ required "database.accountsDb.host must be set from Terraform" .Values.database.accountsDb.host | quote }}
+        - name: database.ledgerDb.host
+          value: {{ required "database.ledgerDb.host must be set from Terraform" .Values.database.ledgerDb.host | quote }}
   destination:
     server: {{ .Values.destinationServer | quote }}
     namespace: {{ .Values.destinationNamespace | quote }}

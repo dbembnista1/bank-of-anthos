@@ -1,17 +1,20 @@
 # Reference AppProject (live object is created by Terraform argocd-bootstrap).
 # sourceRepos must match var.argocd_repo_url — do not hardcode a fork-specific URL here;
-# Terraform owns the cluster resource. Destinations below document the intended isolation.
+# Terraform owns the cluster resource. Destinations below list possible namespaces;
+# live whitelist is enabled app envs + external-secrets (ClusterSecretStore App).
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: bank-of-anthos
   namespace: argocd
 spec:
-  description: Bank of Anthos GitOps apps (shared cluster, namespace isolation)
+  description: Bank of Anthos GitOps apps (shared cluster; optional env namespaces)
   # sourceRepos: set by Terraform (module.argocd / argocd_repo_url)
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
     - server: https://kubernetes.default.svc
       namespace: bank-of-anthos-dev
     - server: https://kubernetes.default.svc

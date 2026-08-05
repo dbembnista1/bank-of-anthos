@@ -45,20 +45,47 @@ variable "app_project_name" {
   default     = "bank-of-anthos"
 }
 
-variable "gitops_dev_path" {
-  description = "Repo path with Application manifests for the dev environment"
-  type        = string
-  default     = "gitops/apps/dev"
+variable "gitops_app_paths" {
+  description = "Map of enabled environment name => repo path with Application manifests"
+  type        = map(string)
 }
 
-variable "gitops_prod_path" {
-  description = "Repo path with Application manifests for the prod environment"
-  type        = string
-  default     = "gitops/apps/prod"
+variable "enabled_environments" {
+  description = "App environments that get a root App-of-Apps (must match keys in gitops_app_paths)"
+  type        = list(string)
 }
 
 variable "destination_namespaces" {
   description = "Kubernetes namespaces AppProject may deploy into (plus argocd for App-of-Apps)"
   type        = list(string)
-  default     = ["bank-of-anthos-dev", "bank-of-anthos-prod"]
+}
+
+variable "gitops_platform_external_secrets_path" {
+  description = "Repo path with ClusterSecretStore Helm chart"
+  type        = string
+  default     = "gitops/platform/external-secrets"
+}
+
+variable "external_secrets_namespace" {
+  description = "Destination namespace for the platform External Secrets App-of-Apps (ESO operator ns)"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "database_hosts" {
+  description = "Map of env => { accounts, ledger } RDS hostnames injected into App-of-Apps Helm parameters"
+  type = map(object({
+    accounts = string
+    ledger   = string
+  }))
+  default = {}
+}
+
+variable "database_secret_arns" {
+  description = "Map of env => { accounts, ledger } RDS-managed Secrets Manager ARNs for ExternalSecret remoteRef (not secret payloads)"
+  type = map(object({
+    accounts = string
+    ledger   = string
+  }))
+  default = {}
 }

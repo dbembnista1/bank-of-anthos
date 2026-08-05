@@ -37,6 +37,8 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -84,7 +86,13 @@ module "rds" {
   subnet_ids                 = module.vpc.private_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
 
-  instances               = var.rds_instances
+  instances = {
+    for k, v in local.rds_instances : k => {
+      identifier = v.identifier
+      db_name    = v.db_name
+      username   = v.username
+    }
+  }
   engine_version          = var.rds_engine_version
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_allocated_storage
@@ -95,6 +103,19 @@ module "rds" {
   skip_final_snapshot     = var.rds_skip_final_snapshot
 }
 
+module "external_secrets" {
+  source = "./modules/external-secrets"
+
+  namespace            = var.eso_namespace
+  chart_version        = var.eso_chart_version
+  service_account_name = var.eso_service_account_name
+  iam_role_name        = var.eso_iam_role_name
+
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider        = module.eks.oidc_provider
+  secrets_manager_arns = local.eso_secrets_manager_arns
+}
+
 module "argocd" {
   source = "./modules/argocd-bootstrap"
 
@@ -102,7 +123,13 @@ module "argocd" {
   gh_token    = var.argocd_gh_token
   gh_username = var.argocd_gh_username
 
-  target_revision    = var.argocd_target_revision
-  chart_version      = var.argocd_chart_version
-  apps_chart_version = var.argocd_apps_chart_version
+  target_revision            = var.argocd_target_revision
+  chart_version              = var.argocd_chart_version
+  apps_chart_version         = var.argocd_apps_chart_version
+  enabled_environments       = var.enabled_environments
+  destination_namespaces     = local.argocd_destination_namespaces
+  gitops_app_paths           = local.gitops_app_paths
+  external_secrets_namespace = var.eso_namespace
+  database_hosts             = local.database_hosts
+  database_secret_arns       = local.database_secret_arns
 }

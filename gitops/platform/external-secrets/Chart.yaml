@@ -1,0 +1,5 @@
+apiVersion: v2
+name: platform-external-secrets
+description: ClusterSecretStore for AWS Secrets Manager (IRSA via ESO ServiceAccount)
+type: application
+version: 0.1.0

@@ -15,6 +15,91 @@ locals {
       }
     ]
   )
+
+  # One root App-of-Apps per enabled environment (dev / prod).
+  env_root_applications = {
+    for env in var.enabled_environments :
+    "root-${env}" => {
+      namespace  = var.namespace
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      project    = var.app_project_name
+      source = {
+        repoURL        = var.repo_url
+        path           = var.gitops_app_paths[env]
+        targetRevision = var.target_revision
+        # Inject fork URL + RDS hosts so Git stays free of account-specific placeholders.
+        helm = {
+          parameters = [
+            {
+              name  = "repoURL"
+              value = var.repo_url
+            },
+            {
+              name  = "targetRevision"
+              value = var.target_revision
+            },
+            {
+              name  = "database.accountsDb.host"
+              value = var.database_hosts[env].accounts
+            },
+            {
+              name  = "database.ledgerDb.host"
+              value = var.database_hosts[env].ledger
+            },
+            {
+              name  = "secrets.accountsDb.remoteKey"
+              value = var.database_secret_arns[env].accounts
+            },
+            {
+              name  = "secrets.ledgerDb.remoteKey"
+              value = var.database_secret_arns[env].ledger
+            },
+          ]
+        }
+      }
+      destination = {
+        server    = local.in_cluster_server
+        namespace = var.namespace
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+
+  # ClusterSecretStore (cluster-scoped) — always synced when Argo CD is installed.
+  platform_root_applications = {
+    root-platform-external-secrets = {
+      namespace  = var.namespace
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      project    = var.app_project_name
+      source = {
+        repoURL        = var.repo_url
+        path           = var.gitops_platform_external_secrets_path
+        targetRevision = var.target_revision
+      }
+      destination = {
+        server    = local.in_cluster_server
+        namespace = var.external_secrets_namespace
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true",
+        ]
+      }
+    }
+  }
+
+  root_applications = merge(local.env_root_applications, local.platform_root_applications)
 }
 
 resource "helm_release" "argocd" {
@@ -28,7 +113,7 @@ resource "helm_release" "argocd" {
   atomic           = true
   timeout          = 600
 
-  # ClusterIP + port-forward for UI (ALB comes in a later phase).
+  # ClusterIP + port-forward for UI (ALB / Ingress is separate platform work).
   values = [
     yamlencode({
       configs = {
@@ -81,7 +166,7 @@ resource "helm_release" "argocd_apps" {
       projects = {
         (var.app_project_name) = {
           namespace    = var.namespace
-          description  = "Bank of Anthos GitOps apps (shared cluster, namespace isolation)"
+          description  = "Bank of Anthos GitOps apps (shared cluster; optional env namespaces)"
           sourceRepos  = [var.repo_url]
           destinations = local.project_destinations
           clusterResourceWhitelist = [
@@ -93,76 +178,7 @@ resource "helm_release" "argocd_apps" {
         }
       }
 
-      applications = {
-        root-dev = {
-          namespace  = var.namespace
-          finalizers = ["resources-finalizer.argocd.argoproj.io"]
-          project    = var.app_project_name
-          source = {
-            repoURL        = var.repo_url
-            path           = var.gitops_dev_path
-            targetRevision = var.target_revision
-            # Inject fork-specific URL so Application templates stay free of hardcoded remotes.
-            helm = {
-              parameters = [
-                {
-                  name  = "repoURL"
-                  value = var.repo_url
-                },
-                {
-                  name  = "targetRevision"
-                  value = var.target_revision
-                },
-              ]
-            }
-          }
-          destination = {
-            server    = local.in_cluster_server
-            namespace = var.namespace
-          }
-          syncPolicy = {
-            automated = {
-              prune    = true
-              selfHeal = true
-            }
-            syncOptions = ["CreateNamespace=true"]
-          }
-        }
-
-        root-prod = {
-          namespace  = var.namespace
-          finalizers = ["resources-finalizer.argocd.argoproj.io"]
-          project    = var.app_project_name
-          source = {
-            repoURL        = var.repo_url
-            path           = var.gitops_prod_path
-            targetRevision = var.target_revision
-            helm = {
-              parameters = [
-                {
-                  name  = "repoURL"
-                  value = var.repo_url
-                },
-                {
-                  name  = "targetRevision"
-                  value = var.target_revision
-                },
-              ]
-            }
-          }
-          destination = {
-            server    = local.in_cluster_server
-            namespace = var.namespace
-          }
-          syncPolicy = {
-            automated = {
-              prune    = true
-              selfHeal = true
-            }
-            syncOptions = ["CreateNamespace=true"]
-          }
-        }
-      }
+      applications = local.root_applications
     })
   ]
 

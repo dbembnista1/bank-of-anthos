@@ -1,7 +1,7 @@
 {{- /*
 DB connection ConfigMaps — non-secret fields only.
 Passwords and full URIs with credentials come from Secrets
-(secrets.accountsDb / secrets.ledgerDb) via External Secrets (phase 7).
+(secrets.accountsDb / secrets.ledgerDb) via External Secrets Operator.
 Upstream BoA put passwords in these ConfigMaps; we intentionally do not.
 */ -}}
 apiVersion: v1

@@ -6,6 +6,13 @@ environment = "shared"
 project     = "BankOfAnthos"
 owner       = "your-name"
 
+# App environments: RDS (accounts+ledger per env) + Argo root Apps.
+# Shared VPC/EKS/ECR always exist. Default is FinOps-friendly (dev only).
+# Examples:
+#   enabled_environments = ["dev"]
+#   enabled_environments = ["dev", "prod"]
+enabled_environments = ["dev"]
+
 # VPC (defaults match a 2-AZ layout in eu-central-1)
 vpc_name               = "bank-of-anthos"
 vpc_cidr               = "10.0.0.0/16"
@@ -15,7 +22,7 @@ private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24"]
 enable_nat_gateway     = true
 single_nat_gateway     = true
 
-# EKS (shared cluster; env split is namespaces bank-of-anthos-dev / bank-of-anthos-prod)
+# EKS (shared cluster; app envs are namespaces bank-of-anthos-<env>)
 eks_cluster_name            = "bank-of-anthos"
 eks_cluster_version         = "1.31"
 eks_endpoint_public_access  = true
@@ -30,8 +37,9 @@ eks_node_desired_size       = 2
 ecr_lifecycle_keep_last = 10
 ecr_force_delete        = true
 
-# RDS (PostgreSQL — accounts + ledger; passwords managed by AWS in Secrets Manager)
-# rds_instances defaults: accounts_db / ledger_db (underscores — RDS forbids hyphens in db_name)
+# RDS (PostgreSQL — one accounts + one ledger instance per enabled environment)
+# Identifiers: <rds_name_prefix>-<env>-accounts|ledger
+# After apply: copy endpoints into charts/bank-of-anthos/values-<env>.yaml
 rds_name_prefix               = "bank-of-anthos"
 rds_engine_version            = "16.14"
 rds_instance_class            = "db.t4g.micro"
@@ -42,10 +50,14 @@ rds_backup_retention_period   = 1
 rds_deletion_protection       = false
 rds_skip_final_snapshot       = true
 
-# Argo CD (bootstrap via Helm; App-of-Apps roots sync gitops/apps/{dev,prod})
+# External Secrets Operator (Helm + IRSA). DB secret ARNs and RDS hosts are injected
+# into Argo by Terraform (helm.parameters) — passwords never enter Terraform state.
+# JWT: .\scripts\bootstrap-jwt.ps1 after apply (name = jwt_secret_name).
+
+# Argo CD (bootstrap via Helm; root App-of-Apps only for enabled_environments)
 # Set the PAT in the shell — never put it in this file or commit it:
 #   $env:TF_VAR_argocd_gh_token = "ghp_..."
 # On fork: change argocd_repo_url once — root Apps pass it into Application templates.
-argocd_repo_url         = "https://github.com/dbembnista1/bank-of-anthos.git"
-argocd_target_revision  = "main"
+argocd_repo_url        = "https://github.com/dbembnista1/bank-of-anthos.git"
+argocd_target_revision = "main"
 # argocd_chart_version and argocd_apps_chart_version use module defaults unless overridden

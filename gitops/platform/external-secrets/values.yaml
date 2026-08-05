@@ -1,0 +1,9 @@
+# ClusterSecretStore is cluster-scoped; destination namespace is only for Argo bookkeeping.
+storeName: aws-secrets-manager
+aws:
+  region: eu-central-1
+  service: SecretsManager
+# Must match terraform module.external_secrets (eso_namespace / eso_service_account_name).
+serviceAccount:
+  name: external-secrets
+  namespace: external-secrets
