@@ -1,0 +1,87 @@
+# Build Bank of Anthos service images and push to ECR.
+# GitOps only: this workflow never talks to EKS. Tag bumps are a separate workflow.
+name: ci-build-images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/ci-build-images.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-build-images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
+jobs:
+  setup:
+    name: Resolve image tag
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    steps:
+      - id: tag
+        run: echo "image_tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            context: src/frontend
+            ecr_repo: bank-of-anthos/frontend
+          - name: userservice
+            context: src/accounts/userservice
+            ecr_repo: bank-of-anthos/userservice
+          - name: contacts
+            context: src/accounts/contacts
+            ecr_repo: bank-of-anthos/contacts
+          - name: ledgerwriter
+            context: src/ledger/ledgerwriter
+            ecr_repo: bank-of-anthos/ledgerwriter
+          - name: balancereader
+            context: src/ledger/balancereader
+            ecr_repo: bank-of-anthos/balancereader
+          - name: transactionhistory
+            context: src/ledger/transactionhistory
+            ecr_repo: bank-of-anthos/transactionhistory
+          - name: loadgenerator
+            context: src/loadgenerator
+            ecr_repo: bank-of-anthos/loadgenerator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ matrix.ecr_repo }}:${{ needs.setup.outputs.image_tag }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          platforms: linux/amd64
