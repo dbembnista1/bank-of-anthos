@@ -5,6 +5,8 @@ targetRevision: main
 project: bank-of-anthos
 destinationServer: https://kubernetes.default.svc
 destinationNamespace: bank-of-anthos-prod
+global:
+  imageRegistry: ""
 database:
   accountsDb:
     host: ""

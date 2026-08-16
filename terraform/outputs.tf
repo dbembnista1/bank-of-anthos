@@ -74,6 +74,11 @@ output "ecr_registry_id" {
   value       = module.ecr.registry_id
 }
 
+output "ecr_image_registry" {
+  description = "ECR registry URL injected into Argo as global.imageRegistry"
+  value       = local.ecr_image_registry
+}
+
 output "enabled_environments" {
   description = "App environments provisioned (RDS + Argo root Apps)"
   value       = var.enabled_environments

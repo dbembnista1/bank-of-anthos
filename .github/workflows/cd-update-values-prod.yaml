@@ -1,0 +1,101 @@
+# Manual promotion: copy image tags from values-dev.yaml into values-prod.yaml.
+# Never runs after a build automatically — that is the prod gate.
+# Argo CD pulls the change; this workflow never talks to the cluster.
+name: cd-update-values-prod
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: cd-update-values-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    name: Promote image tags to values-prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Copy tags from values-dev to values-prod
+        id: tags
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import re
+          import sys
+
+          keys = (
+              "frontend",
+              "userservice",
+              "contacts",
+              "ledgerWriter",
+              "balanceReader",
+              "transactionHistory",
+              "loadgenerator",
+          )
+          placeholders = {"CHANGEME", "SET_BY_ENV_OVERLAY", "SET_BY_ARGO_FROM_TERRAFORM"}
+          tag_re = re.compile(r'tag:\s*"([^"]+)"')
+          dev_path = Path("charts/bank-of-anthos/values-dev.yaml")
+          prod_path = Path("charts/bank-of-anthos/values-prod.yaml")
+          dev = dev_path.read_text(encoding="utf-8")
+          prod = prod_path.read_text(encoding="utf-8")
+
+          def read_tag(text: str, key: str, source: str) -> str:
+              idx = text.find(f"{key}:\n")
+              if idx < 0:
+                  sys.exit(f"{source}: service block not found: {key}")
+              rel = text.find("    tag: ", idx)
+              if rel < 0:
+                  sys.exit(f"{source}: image.tag not found under {key}")
+              line_end = text.find("\n", rel)
+              line = text[rel:line_end]
+              match = tag_re.search(line)
+              if not match:
+                  sys.exit(f"{source}: cannot parse tag under {key}: {line}")
+              return match.group(1)
+
+          tags = {key: read_tag(dev, key, "values-dev.yaml") for key in keys}
+          bad = [f"{k}={v}" for k, v in tags.items() if v in placeholders]
+          if bad:
+              sys.exit("refusing to promote placeholder tags: " + ", ".join(bad))
+
+          for key, tag in tags.items():
+              idx = prod.find(f"{key}:\n")
+              if idx < 0:
+                  sys.exit(f"values-prod.yaml: service block not found: {key}")
+              rel = prod.find("    tag: ", idx)
+              if rel < 0:
+                  sys.exit(f"values-prod.yaml: image.tag not found under {key}")
+              line_end = prod.find("\n", rel)
+              prod = prod[:rel] + f'    tag: "{tag}"' + prod[line_end:]
+
+          prod_path.write_text(prod, encoding="utf-8")
+          unique = sorted(set(tags.values()))
+          summary = unique[0] if len(unique) == 1 else ",".join(unique)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"image_tag={summary}\n")
+          print(f"Promoted tags to values-prod.yaml: {summary}")
+          PY
+
+      - name: Commit and push
+        env:
+          IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charts/bank-of-anthos/values-prod.yaml
+          if git diff --cached --quiet; then
+            echo "values-prod.yaml already matches values-dev tags; nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(gitops): promote image tags to values-prod (${IMAGE_TAG})"
+          git push

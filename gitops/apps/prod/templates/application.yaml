@@ -14,6 +14,8 @@ spec:
         - values.yaml
         - values-prod.yaml
       parameters:
+        - name: global.imageRegistry
+          value: {{ required "global.imageRegistry must be set from Terraform" .Values.global.imageRegistry | quote }}
         - name: database.accountsDb.host
           value: {{ required "database.accountsDb.host must be set from Terraform" .Values.database.accountsDb.host | quote }}
         - name: database.ledgerDb.host

@@ -1,0 +1,104 @@
+# After images land in ECR, write the short SHA into values-dev.yaml.
+# Argo CD pulls the change — this workflow never talks to the cluster.
+# Does not run on prod (see cd-update-values-prod).
+name: cd-update-values-dev
+
+on:
+  workflow_run:
+    workflows: [ci-build-images]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Short SHA already pushed to ECR (7 hex chars)
+        required: true
+        type: string
+
+concurrency:
+  group: cd-update-values-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Bump values-dev image tags
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve image tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.image_tag }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$INPUT_TAG"
+          else
+            tag="${HEAD_SHA:0:7}"
+          fi
+          if ! [[ "$tag" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "Refusing invalid image tag: $tag" >&2
+            exit 1
+          fi
+          echo "image_tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+
+      - name: Set tags in values-dev.yaml
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import sys
+
+          tag = os.environ["IMAGE_TAG"]
+          path = Path("charts/bank-of-anthos/values-dev.yaml")
+          keys = (
+              "frontend",
+              "userservice",
+              "contacts",
+              "ledgerWriter",
+              "balanceReader",
+              "transactionHistory",
+              "loadgenerator",
+          )
+          text = path.read_text(encoding="utf-8")
+          for key in keys:
+              needle = f"{key}:\n"
+              idx = text.find(needle)
+              if idx < 0:
+                  sys.exit(f"service block not found: {key}")
+              marker = "    tag: "
+              rel = text.find(marker, idx)
+              if rel < 0:
+                  sys.exit(f"image.tag not found under {key}")
+              line_end = text.find("\n", rel)
+              text = text[:rel] + f'    tag: "{tag}"' + text[line_end:]
+          path.write_text(text, encoding="utf-8")
+          print(f"Set {len(keys)} image tags to {tag}")
+          PY
+
+      - name: Commit and push
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charts/bank-of-anthos/values-dev.yaml
+          if git diff --cached --quiet; then
+            echo "values-dev.yaml already at ${IMAGE_TAG}; nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(gitops): bump values-dev image tags to ${IMAGE_TAG}"
+          git push

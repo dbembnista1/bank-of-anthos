@@ -1,0 +1,22 @@
+﻿Vendored application source from GoogleCloudPlatform/bank-of-anthos
+Upstream commit: 1e40564f9ff572a28281198903e19da93e506770
+License: Apache License 2.0 (see copyright headers in source files)
+https://github.com/GoogleCloudPlatform/bank-of-anthos
+
+Included for CI image builds (ECR):
+  src/frontend
+  src/loadgenerator
+  src/accounts/contacts
+  src/accounts/userservice
+  src/ledger/balancereader
+  src/ledger/ledgerwriter
+  src/ledger/transactionhistory
+
+Intentionally omitted (RDS replaces in-cluster Postgres; monolith unused):
+  src/accounts/accounts-db
+  src/ledger/ledger-db
+  src/ledgermonolith
+  src/components (Kustomize overlays)
+
+Java ledger services: multi-stage Dockerfile per service (Maven build stage +
+JRE runtime). No root pom.xml / mvnw — keep the repo root for infra/GitOps.

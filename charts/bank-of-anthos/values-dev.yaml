@@ -1,30 +1,46 @@
 # Overrides for DEV environment (merged on top of values.yaml by ArgoCD).
 # Namespace: bank-of-anthos-dev (shared EKS). Enable via terraform enabled_environments.
 #
-# database.*.host is injected at sync time by Argo from Terraform
-# (root-dev helm.parameters → Application parameters). Do not paste endpoints here.
+# database.*.host and global.imageRegistry are injected at sync time by Argo from
+# Terraform (root-dev helm.parameters → Application parameters). Do not paste them here.
+#
+# Image tags: CI (cd-update-values-dev) writes short SHAs after a successful ECR push.
 
 frontend:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 userservice:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 contacts:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 ledgerWriter:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 balanceReader:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 transactionHistory:
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 loadgenerator:
   enabled: true
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 dbInit:
   enabled: true

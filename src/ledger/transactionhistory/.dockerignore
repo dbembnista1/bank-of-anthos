@@ -1,0 +1,6 @@
+target/
+k8s/
+skaffold.yaml
+README.md
+.gitignore
+.git/
