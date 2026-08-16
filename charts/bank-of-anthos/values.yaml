@@ -1,10 +1,11 @@
 # Default values for bank-of-anthos umbrella chart.
 # Environment overlays: values-dev.yaml / values-prod.yaml (merged by ArgoCD).
-# Image tags are updated by CI. Passwords never live here — External Secrets Operator.
+# Image tags live in env overlays (CI bumps values-dev; promote copies to values-prod).
+# Passwords never live here — External Secrets Operator.
 
 global:
-  # Replace ACCOUNT_ID after terraform apply (ecr_repository_urls / aws account id).
-  imageRegistry: "ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com"
+  # Injected at sync by Argo from Terraform (root-* helm.parameters). Do not paste account IDs.
+  imageRegistry: "SET_BY_ARGO_FROM_TERRAFORM"
   # Shared labels applied by templates
   labels:
     application: bank-of-anthos
@@ -60,12 +61,13 @@ dbInit:
 # ---------------------------------------------------------------------------
 # Application services (ECR repos match terraform ecr_repository_names)
 # resources match upstream kubernetes-manifests in GoogleCloudPlatform/bank-of-anthos
+# image.tag is overridden per env (values-dev.yaml / values-prod.yaml).
 # ---------------------------------------------------------------------------
 
 frontend:
   image:
     repository: bank-of-anthos/frontend
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     type: ClusterIP
@@ -82,7 +84,7 @@ frontend:
 userservice:
   image:
     repository: bank-of-anthos/userservice
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     port: 8080
@@ -99,7 +101,7 @@ userservice:
 contacts:
   image:
     repository: bank-of-anthos/contacts
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     port: 8080
@@ -116,7 +118,7 @@ contacts:
 ledgerWriter:
   image:
     repository: bank-of-anthos/ledgerwriter
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     port: 8080
@@ -133,7 +135,7 @@ ledgerWriter:
 balanceReader:
   image:
     repository: bank-of-anthos/balancereader
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     port: 8080
@@ -150,7 +152,7 @@ balanceReader:
 transactionHistory:
   image:
     repository: bank-of-anthos/transactionhistory
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   service:
     port: 8080
@@ -168,7 +170,7 @@ loadgenerator:
   enabled: true
   image:
     repository: bank-of-anthos/loadgenerator
-    tag: "CHANGEME"
+    tag: "SET_BY_ENV_OVERLAY"
   replicas: 1
   resources:
     requests:

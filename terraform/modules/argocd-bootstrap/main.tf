@@ -27,7 +27,7 @@ locals {
         repoURL        = var.repo_url
         path           = var.gitops_app_paths[env]
         targetRevision = var.target_revision
-        # Inject fork URL + RDS hosts so Git stays free of account-specific placeholders.
+        # Inject fork URL, ECR registry, and RDS hosts so Git stays free of account-specific placeholders.
         helm = {
           parameters = [
             {
@@ -37,6 +37,10 @@ locals {
             {
               name  = "targetRevision"
               value = var.target_revision
+            },
+            {
+              name  = "global.imageRegistry"
+              value = var.image_registry
             },
             {
               name  = "database.accountsDb.host"

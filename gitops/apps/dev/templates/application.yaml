@@ -13,8 +13,10 @@ spec:
       valueFiles:
         - values.yaml
         - values-dev.yaml
-      # RDS hosts injected by Terraform via root-dev helm.parameters (stable Git, no placeholders).
+      # Registry + RDS hosts injected by Terraform via root-dev helm.parameters (stable Git).
       parameters:
+        - name: global.imageRegistry
+          value: {{ required "global.imageRegistry must be set from Terraform" .Values.global.imageRegistry | quote }}
         - name: database.accountsDb.host
           value: {{ required "database.accountsDb.host must be set from Terraform" .Values.database.accountsDb.host | quote }}
         - name: database.ledgerDb.host

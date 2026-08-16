@@ -89,3 +89,8 @@ variable "database_secret_arns" {
   }))
   default = {}
 }
+
+variable "image_registry" {
+  description = "ECR registry URL injected into App-of-Apps Helm parameters (global.imageRegistry)"
+  type        = string
+}

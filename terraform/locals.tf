@@ -38,6 +38,10 @@ locals {
     env => "gitops/apps/${env}"
   }
 
+  # Shared ECR registry for all app images (account.dkr.ecr.region.amazonaws.com).
+  # Injected into Argo like RDS hosts — Git keeps a placeholder, not the account ID.
+  ecr_image_registry = "${module.ecr.registry_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+
   # Nested maps for Argo Helm parameter injection (hosts + RDS-managed secret ARNs).
   # Passwords stay in Secrets Manager only — Terraform never reads secret payloads.
   database_hosts = {

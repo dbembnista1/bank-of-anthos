@@ -1,11 +1,13 @@
 # Defaults for helm template / local render.
 # Live cluster: root-dev helm.parameters from Terraform
-# (repoURL, targetRevision, database.*.host, secrets.*.remoteKey → secrets App).
+# (repoURL, targetRevision, global.imageRegistry, database.*.host, secrets.*.remoteKey).
 repoURL: ""
 targetRevision: main
 project: bank-of-anthos
 destinationServer: https://kubernetes.default.svc
 destinationNamespace: bank-of-anthos-dev
+global:
+  imageRegistry: ""
 database:
   accountsDb:
     host: ""

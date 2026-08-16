@@ -132,4 +132,5 @@ module "argocd" {
   external_secrets_namespace = var.eso_namespace
   database_hosts             = local.database_hosts
   database_secret_arns       = local.database_secret_arns
+  image_registry             = local.ecr_image_registry
 }

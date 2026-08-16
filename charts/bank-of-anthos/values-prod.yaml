@@ -2,29 +2,46 @@
 # Namespace: bank-of-anthos-prod. Enable via terraform enabled_environments = [..., "prod"].
 # HA: replicas >= 2 for stateless services.
 #
-# database.*.host is injected by Terraform via Argo Helm parameters (not pasted here).
+# database.*.host and global.imageRegistry are injected by Terraform via Argo Helm
+# parameters (not pasted here).
+#
+# Image tags: promote from values-dev.yaml via cd-update-values-prod (manual).
 
 frontend:
   replicas: 3
+  image:
+    tag: "CHANGEME"
 
 userservice:
   replicas: 2
+  image:
+    tag: "CHANGEME"
 
 contacts:
   replicas: 2
+  image:
+    tag: "CHANGEME"
 
 ledgerWriter:
   replicas: 2
+  image:
+    tag: "CHANGEME"
 
 balanceReader:
   replicas: 2
+  image:
+    tag: "CHANGEME"
 
 transactionHistory:
   replicas: 2
+  image:
+    tag: "CHANGEME"
 
 loadgenerator:
   enabled: true
   replicas: 1
+  image:
+    tag: "CHANGEME"
 
 dbInit:
   enabled: true
