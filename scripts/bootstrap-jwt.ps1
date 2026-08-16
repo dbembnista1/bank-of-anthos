@@ -8,7 +8,9 @@
   kubectl create secret. External Secrets Operator later syncs into Kubernetes Secret jwt-key.
 
   Run after terraform apply (platform up). Safe to re-run: skips if the secret already
-  has a value unless -ForceRotate is set. Does not commit PEM files to the repo.
+  has ESO-compatible keys (private_key / public_key) unless -ForceRotate is set.
+  Rewrites automatically if the payload still uses dotted keys (jwtRS256.key*), which
+  External Secrets treats as a gjson path and cannot extract. Does not commit PEM files.
 
 .PARAMETER SecretName
   Secrets Manager secret name (default: bank-of-anthos-jwt).
@@ -62,9 +64,29 @@ foreach ($cmd in @("openssl", "aws")) {
     }
 }
 
-# Skip when secret already has a current version (idempotent lab setup).
+function Test-JwtPayloadHasEsoKeys {
+    param([string]$SecretString)
+    if ([string]::IsNullOrWhiteSpace($SecretString)) { return $false }
+    try {
+        $obj = $SecretString | ConvertFrom-Json
+        return -not [string]::IsNullOrWhiteSpace($obj.private_key) -and
+            -not [string]::IsNullOrWhiteSpace($obj.public_key)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Get-PemLf {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $raw = Get-Content -Raw -Path $Path
+    return (($raw -replace "`r`n", "`n" -replace "`r", "`n").Trim() + "`n")
+}
+
+# Skip when secret already has ESO-compatible keys (idempotent lab setup).
 $secretExists = $false
 $hasValue = $false
+$hasEsoKeys = $false
 
 $describeExit = Invoke-Native {
     aws secretsmanager describe-secret --secret-id $SecretName --region $Region 2>$null | Out-Null
@@ -81,12 +103,23 @@ if ($describeExit -eq 0) {
     $meta = $metaJson | ConvertFrom-Json
     if ($null -ne $meta.VersionIdsToStages -and $meta.VersionIdsToStages.PSObject.Properties.Count -gt 0) {
         $hasValue = $true
+        $secretString = $null
+        $getExit = Invoke-Native {
+            $script:secretString = aws secretsmanager get-secret-value --secret-id $SecretName --region $Region --query SecretString --output text
+        }
+        if ($getExit -eq 0) {
+            $hasEsoKeys = Test-JwtPayloadHasEsoKeys -SecretString $secretString
+        }
     }
 }
 
-if ($hasValue -and -not $ForceRotate) {
-    Write-Host "Secret '$SecretName' already has a value. Skipping (use -ForceRotate)."
+if ($hasValue -and $hasEsoKeys -and -not $ForceRotate) {
+    Write-Host "Secret '$SecretName' already has private_key/public_key. Skipping (use -ForceRotate)."
     exit 0
+}
+
+if ($hasValue -and -not $hasEsoKeys -and -not $ForceRotate) {
+    Write-Host "Secret '$SecretName' uses dotted JSON keys that External Secrets cannot extract. Rewriting as private_key/public_key."
 }
 
 $workDir = Join-Path ([System.IO.Path]::GetTempPath()) ("boa-jwt-" + [guid]::NewGuid().ToString("N"))
@@ -103,12 +136,14 @@ try {
     $pubExit = Invoke-Native { openssl rsa -in $keyPath -outform PEM -pubout -out $pubPath }
     if ($pubExit -ne 0) { throw "openssl rsa -pubout failed (exit $pubExit)" }
 
-    # Keys must match the umbrella chart Kubernetes Secret jwt-key.
+    # JSON field names must not contain dots: External Secrets treats property as a
+    # gjson path, so jwtRS256.key.pub would write the whole JSON blob into K8s.
+    # ExternalSecret maps these onto Secret keys jwtRS256.key / jwtRS256.key.pub.
     $payload = [ordered]@{
-        "jwtRS256.key"     = (Get-Content -Raw -Path $keyPath)
-        "jwtRS256.key.pub" = (Get-Content -Raw -Path $pubPath)
+        private_key = Get-PemLf -Path $keyPath
+        public_key  = Get-PemLf -Path $pubPath
     }
-    $json = $payload | ConvertTo-Json -Compress
+    $json = $payload | ConvertTo-Json -Compress -Depth 5
     # Avoid UTF-8 BOM (Windows PowerShell 5.1 Set-Content -Encoding utf8 adds BOM; breaks AWS CLI).
     [System.IO.File]::WriteAllText($jsonPath, $json)
 
