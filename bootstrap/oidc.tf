@@ -25,11 +25,15 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Security: restrict role assumption to this specific repository only
+    # Restrict to this repository. GitHub now prefixes sub with owner/repo numeric IDs
+    # (repo:owner@id/repo@id:ref:...) as well as the classic repo:owner/repo:ref:... form.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_owner}/${var.github_repo_name}:*"]
+      values = [
+        "repo:${var.github_owner}/${var.github_repo_name}:*",
+        "repo:${var.github_owner}@*/${var.github_repo_name}@*:*",
+      ]
     }
   }
 }
