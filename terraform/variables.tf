@@ -134,12 +134,6 @@ variable "eks_node_max_size" {
   default     = 4
 }
 
-variable "eks_node_desired_size" {
-  description = "Desired size of the managed node group"
-  type        = number
-  default     = 2
-}
-
 variable "ecr_repository_names" {
   description = "ECR repos for Bank of Anthos app images (ledger-db/accounts-db use RDS, not container images)"
   type        = list(string)
