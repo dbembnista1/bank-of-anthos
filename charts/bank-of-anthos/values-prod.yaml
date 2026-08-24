@@ -10,38 +10,38 @@
 frontend:
   replicas: 3
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 userservice:
   replicas: 2
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 contacts:
   replicas: 2
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 ledgerWriter:
   replicas: 2
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 balanceReader:
   replicas: 2
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 transactionHistory:
   replicas: 2
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 loadgenerator:
   enabled: true
   replicas: 1
   image:
-    tag: "CHANGEME"
+    tag: "d5dca0d"
 
 dbInit:
   enabled: true
