@@ -30,7 +30,6 @@ eks_endpoint_private_access = true
 eks_node_instance_types     = ["t3.medium"]
 eks_node_min_size           = 2
 eks_node_max_size           = 4
-eks_node_desired_size       = 2
 
 # ECR (app images only; DBs are on RDS)
 # ecr_repository_names defaults cover all 7 Bank of Anthos services

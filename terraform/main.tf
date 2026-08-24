@@ -67,7 +67,7 @@ module "eks" {
   node_instance_types = var.eks_node_instance_types
   node_min_size       = var.eks_node_min_size
   node_max_size       = var.eks_node_max_size
-  node_desired_size   = var.eks_node_desired_size
+  node_desired_size   = contains(var.enabled_environments, "prod") ? 3 : 2
 }
 
 module "ecr" {
