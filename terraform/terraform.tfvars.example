@@ -24,7 +24,7 @@ single_nat_gateway     = true
 
 # EKS (shared cluster; app envs are namespaces bank-of-anthos-<env>)
 eks_cluster_name            = "bank-of-anthos"
-eks_cluster_version         = "1.31"
+eks_cluster_version         = "1.35"
 eks_endpoint_public_access  = true
 eks_endpoint_private_access = true
 eks_node_instance_types     = ["t3.medium"]

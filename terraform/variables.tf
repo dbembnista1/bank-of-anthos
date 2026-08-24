@@ -101,7 +101,7 @@ variable "eks_cluster_name" {
 variable "eks_cluster_version" {
   description = "Kubernetes version for the EKS control plane"
   type        = string
-  default     = "1.31"
+  default     = "1.35"
 }
 
 variable "eks_endpoint_public_access" {
