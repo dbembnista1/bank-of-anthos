@@ -244,6 +244,30 @@ variable "eso_iam_role_name" {
   default     = "bank-of-anthos-external-secrets"
 }
 
+variable "alb_controller_namespace" {
+  description = "Namespace for AWS Load Balancer Controller"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
+variable "alb_controller_chart_version" {
+  description = "aws-load-balancer-controller Helm chart version (aws.github.io/eks-charts)"
+  type        = string
+  default     = "3.5.0"
+}
+
+variable "alb_controller_service_account_name" {
+  description = "AWS Load Balancer Controller ServiceAccount name (IRSA trust + Helm SA)"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
+variable "alb_controller_iam_role_name" {
+  description = "IAM role name for AWS Load Balancer Controller IRSA"
+  type        = string
+  default     = "bank-of-anthos-aws-lbc"
+}
+
 variable "argocd_repo_url" {
   description = "Git repository URL for Argo CD App-of-Apps and child Applications"
   type        = string

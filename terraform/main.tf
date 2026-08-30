@@ -103,6 +103,19 @@ module "rds" {
   skip_final_snapshot     = var.rds_skip_final_snapshot
 }
 
+module "aws_load_balancer_controller" {
+  source = "./modules/aws-load-balancer-controller"
+
+  cluster_name         = module.eks.cluster_name
+  vpc_id               = module.vpc.vpc_id
+  region               = var.aws_region
+  namespace            = var.alb_controller_namespace
+  chart_version        = var.alb_controller_chart_version
+  service_account_name = var.alb_controller_service_account_name
+  iam_role_name        = var.alb_controller_iam_role_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+}
+
 module "external_secrets" {
   source = "./modules/external-secrets"
 
@@ -114,6 +127,9 @@ module "external_secrets" {
   oidc_provider_arn    = module.eks.oidc_provider_arn
   oidc_provider        = module.eks.oidc_provider
   secrets_manager_arns = local.eso_secrets_manager_arns
+
+  # LBC registers cluster-wide webhooks; Helm Service creates must not race empty endpoints.
+  depends_on = [module.aws_load_balancer_controller]
 }
 
 module "argocd" {
@@ -133,4 +149,6 @@ module "argocd" {
   database_hosts             = local.database_hosts
   database_secret_arns       = local.database_secret_arns
   image_registry             = local.ecr_image_registry
+
+  depends_on = [module.aws_load_balancer_controller]
 }

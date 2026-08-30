@@ -159,6 +159,26 @@ output "eso_iam_role_arn" {
   value       = module.external_secrets.iam_role_arn
 }
 
+output "alb_controller_namespace" {
+  description = "Namespace where AWS Load Balancer Controller runs"
+  value       = module.aws_load_balancer_controller.namespace
+}
+
+output "alb_controller_service_account_name" {
+  description = "AWS Load Balancer Controller ServiceAccount name (IRSA)"
+  value       = module.aws_load_balancer_controller.service_account_name
+}
+
+output "alb_controller_iam_role_arn" {
+  description = "IAM role ARN used by AWS Load Balancer Controller via IRSA"
+  value       = module.aws_load_balancer_controller.iam_role_arn
+}
+
+output "alb_controller_release_name" {
+  description = "Helm release name for AWS Load Balancer Controller"
+  value       = module.aws_load_balancer_controller.release_name
+}
+
 output "jwt_secret_name" {
   description = "Expected Secrets Manager name for JWT (scripts/bootstrap-jwt.ps1)"
   value       = var.jwt_secret_name

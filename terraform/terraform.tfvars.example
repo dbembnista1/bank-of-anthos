@@ -53,6 +53,9 @@ rds_skip_final_snapshot       = true
 # into Argo by Terraform (helm.parameters) — passwords never enter Terraform state.
 # JWT: .\scripts\bootstrap-jwt.ps1 after apply (name = jwt_secret_name).
 
+# AWS Load Balancer Controller (Helm + IRSA). No ALB until an Ingress exists (phase 9).
+# alb_controller_chart_version uses the module default unless overridden.
+
 # Argo CD (bootstrap via Helm; root App-of-Apps only for enabled_environments)
 # Set the PAT in the shell — never put it in this file or commit it:
 #   $env:TF_VAR_argocd_gh_token = "ghp_..."
