@@ -39,6 +39,28 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+resource "terraform_data" "ingress_guards" {
+  input = {
+    ingress_environments = var.ingress_environments
+    enabled_environments = var.enabled_environments
+    ingress_domain       = var.ingress_domain
+    manage_dns           = var.ingress_manage_dns_records
+  }
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for env in var.ingress_environments : contains(var.enabled_environments, env)
+      ])
+      error_message = "ingress_environments must be a subset of enabled_environments."
+    }
+    precondition {
+      condition     = !var.ingress_manage_dns_records || var.ingress_domain != ""
+      error_message = "ingress_manage_dns_records requires a non-empty ingress_domain."
+    }
+  }
+}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -116,6 +138,20 @@ module "aws_load_balancer_controller" {
   oidc_provider_arn    = module.eks.oidc_provider_arn
 }
 
+# Hosted zone + ACM wildcard. Skipped when ingress_domain is empty (lab HTTP ALB).
+module "ingress_dns" {
+  count  = var.ingress_domain != "" ? 1 : 0
+  source = "./modules/ingress-dns"
+
+  domain             = var.ingress_domain
+  cluster_name       = module.eks.cluster_name
+  group_name         = local.ingress_group_name
+  record_names       = var.ingress_environments
+  manage_dns_records = var.ingress_manage_dns_records
+
+  depends_on = [terraform_data.ingress_guards]
+}
+
 module "external_secrets" {
   source = "./modules/external-secrets"
 
@@ -149,6 +185,10 @@ module "argocd" {
   database_hosts             = local.database_hosts
   database_secret_arns       = local.database_secret_arns
   image_registry             = local.ecr_image_registry
+  frontend_ingress           = local.frontend_ingress
 
-  depends_on = [module.aws_load_balancer_controller]
+  depends_on = [
+    module.aws_load_balancer_controller,
+    terraform_data.ingress_guards,
+  ]
 }

@@ -27,7 +27,7 @@ locals {
         repoURL        = var.repo_url
         path           = var.gitops_app_paths[env]
         targetRevision = var.target_revision
-        # Inject fork URL, ECR registry, and RDS hosts so Git stays free of account-specific placeholders.
+        # Inject fork URL, ECR registry, RDS hosts, and Ingress so Git has no account-specific values.
         helm = {
           parameters = [
             {
@@ -57,6 +57,22 @@ locals {
             {
               name  = "secrets.ledgerDb.remoteKey"
               value = var.database_secret_arns[env].ledger
+            },
+            {
+              name  = "frontend.ingress.enabled"
+              value = var.frontend_ingress[env].enabled ? "true" : "false"
+            },
+            {
+              name  = "frontend.scheme"
+              value = var.frontend_ingress[env].scheme
+            },
+            {
+              name  = "frontend.ingress.host"
+              value = var.frontend_ingress[env].host
+            },
+            {
+              name  = "frontend.ingress.certificateArn"
+              value = var.frontend_ingress[env].certificate_arn
             },
           ]
         }
@@ -190,4 +206,13 @@ resource "helm_release" "argocd_apps" {
     helm_release.argocd,
     kubernetes_secret_v1.repo,
   ]
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for env in var.enabled_environments : contains(keys(var.frontend_ingress), env)
+      ])
+      error_message = "frontend_ingress must include an entry for every enabled environment."
+    }
+  }
 }

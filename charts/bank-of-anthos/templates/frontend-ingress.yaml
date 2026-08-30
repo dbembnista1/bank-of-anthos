@@ -1,4 +1,4 @@
-{{- if .Values.frontend.ingress.enabled }}
+{{- if eq (.Values.frontend.ingress.enabled | toString) "true" }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

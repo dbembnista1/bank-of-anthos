@@ -67,4 +67,20 @@ locals {
     values(module.rds.master_user_secret_arns),
     [local.jwt_secret_arn_pattern]
   )
+
+  # Must match alb.ingress.kubernetes.io/group.name in the umbrella chart (TLS only).
+  ingress_group_name = "bank-of-anthos"
+
+  ingress_certificate_arn = try(module.ingress_dns[0].certificate_arn, "")
+
+  # Per-env Helm values injected by Argo (not committed in values-dev / values-prod).
+  frontend_ingress = {
+    for env in var.enabled_environments :
+    env => {
+      enabled         = contains(var.ingress_environments, env)
+      scheme          = contains(var.ingress_environments, env) && var.ingress_domain != "" ? "https" : "http"
+      host            = contains(var.ingress_environments, env) && var.ingress_domain != "" ? "${env}.${var.ingress_domain}" : ""
+      certificate_arn = contains(var.ingress_environments, env) && var.ingress_domain != "" ? local.ingress_certificate_arn : ""
+    }
+  }
 }

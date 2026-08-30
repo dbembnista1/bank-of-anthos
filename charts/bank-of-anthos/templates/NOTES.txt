@@ -36,7 +36,7 @@ Demo login (when loadDemoData=true):
 
 Frontend Service:
   type={{ .Values.frontend.service.type }}  port={{ .Values.frontend.service.port }}
-{{- if .Values.frontend.ingress.enabled }}
+{{- if eq (.Values.frontend.ingress.enabled | toString) "true" }}
   Ingress: enabled (internet-facing ALB, scheme={{ .Values.frontend.scheme }})
 {{- if .Values.frontend.ingress.host }}
   host={{ .Values.frontend.ingress.host }}

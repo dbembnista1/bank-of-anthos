@@ -268,6 +268,41 @@ variable "alb_controller_iam_role_name" {
   default     = "bank-of-anthos-aws-lbc"
 }
 
+variable "ingress_environments" {
+  description = "App environments that get a public frontend Ingress (must be a subset of enabled_environments). Empty list = no Ingress = no ALB."
+  type        = list(string)
+  default     = ["dev"]
+
+  validation {
+    condition = alltrue([
+      for env in var.ingress_environments : contains(["dev", "prod"], env)
+    ])
+    error_message = "ingress_environments may only contain \"dev\" and/or \"prod\"."
+  }
+
+  validation {
+    condition     = length(var.ingress_environments) == length(toset(var.ingress_environments))
+    error_message = "ingress_environments must not contain duplicates."
+  }
+}
+
+variable "ingress_domain" {
+  description = "Public DNS zone for frontend TLS (e.g. example.com). Empty = lab: HTTP ALB hostname, no Route53/ACM. When set, Terraform creates a hosted zone + ACM wildcard; Argo injects host=<env>.<domain>."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.ingress_domain == "" || can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$", var.ingress_domain))
+    error_message = "ingress_domain must be empty or a DNS name like example.com (no trailing dot, no protocol)."
+  }
+}
+
+variable "ingress_manage_dns_records" {
+  description = "Create Route53 alias records to the grouped ALB. Set true only after the Ingress has provisioned the load balancer (second apply). Requires a non-empty ingress_domain."
+  type        = bool
+  default     = false
+}
+
 variable "argocd_repo_url" {
   description = "Git repository URL for Argo CD App-of-Apps and child Applications"
   type        = string
