@@ -53,10 +53,27 @@ rds_skip_final_snapshot       = true
 # into Argo by Terraform (helm.parameters) — passwords never enter Terraform state.
 # JWT: .\scripts\bootstrap-jwt.ps1 after apply (name = jwt_secret_name).
 
+# AWS Load Balancer Controller (Helm + IRSA). Always installed; ALB is created
+# only when an Ingress exists (ingress_environments is non-empty after GitOps sync).
+# alb_controller_chart_version uses the module default unless overridden.
+
+# Public frontend Ingress — switches live here, not in values-dev / values-prod.
+#   ingress_environments ⊆ enabled_environments. Empty list = zero Ingresses = zero ALB.
+#   ingress_domain empty = lab (HTTP, one ALB per Ingress, URL is *.elb.amazonaws.com).
+#   ingress_domain set  = look up the existing public hosted zone (register the
+#     domain in Route 53 first — do not let this stack create a second zone) +
+#     ACM wildcard + ExternalDNS (aliases when Ingress has an ADDRESS);
+#     Argo injects host=boa-<env>.<domain> + cert.
+ingress_environments = ["dev"]
+ingress_domain       = ""
+
 # Argo CD (bootstrap via Helm; root App-of-Apps only for enabled_environments)
 # Set the PAT in the shell — never put it in this file or commit it:
 #   $env:TF_VAR_argocd_gh_token = "ghp_..."
 # On fork: change argocd_repo_url once — root Apps pass it into Application templates.
-argocd_repo_url        = "https://github.com/dbembnista1/bank-of-anthos.git"
+argocd_repo_url = "https://github.com/dbembnista1/bank-of-anthos.git"
+# Git revision Argo syncs (root + child Applications). Default main.
+# To test a PR branch: push it, set this to the branch name, terraform apply.
+# After merge: set back to main and apply — otherwise Argo keeps tracking a deleted branch.
 argocd_target_revision = "main"
 # argocd_chart_version and argocd_apps_chart_version use module defaults unless overridden

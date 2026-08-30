@@ -39,6 +39,23 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+resource "terraform_data" "ingress_guards" {
+  input = {
+    ingress_environments = var.ingress_environments
+    enabled_environments = var.enabled_environments
+    ingress_domain       = var.ingress_domain
+  }
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for env in var.ingress_environments : contains(var.enabled_environments, env)
+      ])
+      error_message = "ingress_environments must be a subset of enabled_environments."
+    }
+  }
+}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -103,6 +120,51 @@ module "rds" {
   skip_final_snapshot     = var.rds_skip_final_snapshot
 }
 
+module "aws_load_balancer_controller" {
+  source = "./modules/aws-load-balancer-controller"
+
+  cluster_name         = module.eks.cluster_name
+  vpc_id               = module.vpc.vpc_id
+  region               = var.aws_region
+  namespace            = var.alb_controller_namespace
+  chart_version        = var.alb_controller_chart_version
+  service_account_name = var.alb_controller_service_account_name
+  iam_role_name        = var.alb_controller_iam_role_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+}
+
+# ACM wildcard in the existing public hosted zone. Skipped when ingress_domain is empty.
+module "ingress_dns" {
+  count  = var.ingress_domain != "" ? 1 : 0
+  source = "./modules/ingress-dns"
+
+  domain = var.ingress_domain
+
+  depends_on = [terraform_data.ingress_guards]
+}
+
+# Writes Route 53 aliases when Ingress gets an ADDRESS. Same count as ACM (needs a zone).
+module "external_dns" {
+  count  = var.ingress_domain != "" ? 1 : 0
+  source = "./modules/external-dns"
+
+  domain               = var.ingress_domain
+  hosted_zone_arn      = module.ingress_dns[0].zone_arn
+  hosted_zone_id       = module.ingress_dns[0].zone_id
+  region               = var.aws_region
+  txt_owner_id         = var.eks_cluster_name
+  namespace            = var.external_dns_namespace
+  chart_version        = var.external_dns_chart_version
+  service_account_name = var.external_dns_service_account_name
+  iam_role_name        = var.external_dns_iam_role_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  depends_on = [
+    module.ingress_dns,
+    module.aws_load_balancer_controller,
+  ]
+}
+
 module "external_secrets" {
   source = "./modules/external-secrets"
 
@@ -114,6 +176,9 @@ module "external_secrets" {
   oidc_provider_arn    = module.eks.oidc_provider_arn
   oidc_provider        = module.eks.oidc_provider
   secrets_manager_arns = local.eso_secrets_manager_arns
+
+  # LBC registers cluster-wide webhooks; Helm Service creates must not race empty endpoints.
+  depends_on = [module.aws_load_balancer_controller]
 }
 
 module "argocd" {
@@ -133,4 +198,11 @@ module "argocd" {
   database_hosts             = local.database_hosts
   database_secret_arns       = local.database_secret_arns
   image_registry             = local.ecr_image_registry
+  frontend_ingress           = local.frontend_ingress
+
+  depends_on = [
+    module.aws_load_balancer_controller,
+    module.external_dns,
+    terraform_data.ingress_guards,
+  ]
 }

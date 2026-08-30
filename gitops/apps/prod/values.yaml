@@ -17,3 +17,9 @@ secrets:
     remoteKey: ""
   ledgerDb:
     remoteKey: ""
+frontend:
+  scheme: http
+  ingress:
+    enabled: false
+    host: ""
+    certificateArn: ""

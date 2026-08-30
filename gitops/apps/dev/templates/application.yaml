@@ -13,7 +13,7 @@ spec:
       valueFiles:
         - values.yaml
         - values-dev.yaml
-      # Registry + RDS hosts injected by Terraform via root-dev helm.parameters (stable Git).
+      # Registry, RDS hosts, and Ingress injected by Terraform via root-dev helm.parameters (stable Git).
       parameters:
         - name: global.imageRegistry
           value: {{ required "global.imageRegistry must be set from Terraform" .Values.global.imageRegistry | quote }}
@@ -21,6 +21,14 @@ spec:
           value: {{ required "database.accountsDb.host must be set from Terraform" .Values.database.accountsDb.host | quote }}
         - name: database.ledgerDb.host
           value: {{ required "database.ledgerDb.host must be set from Terraform" .Values.database.ledgerDb.host | quote }}
+        - name: frontend.ingress.enabled
+          value: {{ .Values.frontend.ingress.enabled | toString | quote }}
+        - name: frontend.scheme
+          value: {{ .Values.frontend.scheme | default "http" | quote }}
+        - name: frontend.ingress.host
+          value: {{ .Values.frontend.ingress.host | default "" | quote }}
+        - name: frontend.ingress.certificateArn
+          value: {{ .Values.frontend.ingress.certificateArn | default "" | quote }}
   destination:
     server: {{ .Values.destinationServer | quote }}
     namespace: {{ .Values.destinationNamespace | quote }}

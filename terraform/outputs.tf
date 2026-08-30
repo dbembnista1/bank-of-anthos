@@ -159,6 +159,71 @@ output "eso_iam_role_arn" {
   value       = module.external_secrets.iam_role_arn
 }
 
+output "alb_controller_namespace" {
+  description = "Namespace where AWS Load Balancer Controller runs"
+  value       = module.aws_load_balancer_controller.namespace
+}
+
+output "alb_controller_service_account_name" {
+  description = "AWS Load Balancer Controller ServiceAccount name (IRSA)"
+  value       = module.aws_load_balancer_controller.service_account_name
+}
+
+output "alb_controller_iam_role_arn" {
+  description = "IAM role ARN used by AWS Load Balancer Controller via IRSA"
+  value       = module.aws_load_balancer_controller.iam_role_arn
+}
+
+output "alb_controller_release_name" {
+  description = "Helm release name for AWS Load Balancer Controller"
+  value       = module.aws_load_balancer_controller.release_name
+}
+
+output "ingress_environments" {
+  description = "App environments that receive a public frontend Ingress"
+  value       = var.ingress_environments
+}
+
+output "ingress_domain" {
+  description = "Public DNS zone for frontend TLS (empty = lab HTTP ALB)"
+  value       = var.ingress_domain
+}
+
+output "ingress_group_name" {
+  description = "ALB IngressGroup name (TLS / shared ALB only)"
+  value       = local.ingress_group_name
+}
+
+output "ingress_certificate_arn" {
+  description = "ACM certificate ARN injected into Argo when ingress_domain is set"
+  value       = local.ingress_certificate_arn
+}
+
+output "ingress_hosted_zone_id" {
+  description = "Existing Route53 public hosted zone ID looked up by ingress_domain (null when empty)"
+  value       = try(module.ingress_dns[0].zone_id, null)
+}
+
+output "ingress_name_servers" {
+  description = "Nameservers of the existing hosted zone (informational; already attached for a Route 53 registered domain)"
+  value       = try(module.ingress_dns[0].name_servers, null)
+}
+
+output "external_dns_namespace" {
+  description = "Namespace where ExternalDNS runs (null when ingress_domain is empty)"
+  value       = try(module.external_dns[0].namespace, null)
+}
+
+output "external_dns_iam_role_arn" {
+  description = "IAM role ARN used by ExternalDNS via IRSA (null when ingress_domain is empty)"
+  value       = try(module.external_dns[0].iam_role_arn, null)
+}
+
+output "frontend_ingress" {
+  description = "Per-env Ingress Helm values injected into Argo (enabled, scheme, host, certificate ARN)"
+  value       = local.frontend_ingress
+}
+
 output "jwt_secret_name" {
   description = "Expected Secrets Manager name for JWT (scripts/bootstrap-jwt.ps1)"
   value       = var.jwt_secret_name

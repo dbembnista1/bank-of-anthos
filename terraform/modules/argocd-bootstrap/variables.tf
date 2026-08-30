@@ -94,3 +94,13 @@ variable "image_registry" {
   description = "ECR registry URL injected into App-of-Apps Helm parameters (global.imageRegistry)"
   type        = string
 }
+
+variable "frontend_ingress" {
+  description = "Per-env frontend Ingress Helm parameters injected into root App-of-Apps (enabled, scheme, host, ACM ARN). Host and certificate_arn are empty in lab mode."
+  type = map(object({
+    enabled         = bool
+    scheme          = string
+    host            = string
+    certificate_arn = string
+  }))
+}
