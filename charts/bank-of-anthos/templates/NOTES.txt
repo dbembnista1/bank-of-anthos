@@ -36,7 +36,14 @@ Demo login (when loadDemoData=true):
 
 Frontend Service:
   type={{ .Values.frontend.service.type }}  port={{ .Values.frontend.service.port }}
-  (ClusterIP — expose via Ingress / ALB Controller when ready)
+{{- if .Values.frontend.ingress.enabled }}
+  Ingress: enabled (internet-facing ALB, scheme={{ .Values.frontend.scheme }})
+{{- if .Values.frontend.ingress.host }}
+  host={{ .Values.frontend.ingress.host }}
+{{- end }}
+{{- else }}
+  Ingress: disabled (ClusterIP — enable via Terraform ingress_environments)
+{{- end }}
 
 Verify:
   kubectl get pods,svc,jobs -n {{ .Release.Namespace }}
