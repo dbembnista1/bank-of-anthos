@@ -209,6 +209,16 @@ output "ingress_name_servers" {
   value       = try(module.ingress_dns[0].name_servers, null)
 }
 
+output "external_dns_namespace" {
+  description = "Namespace where ExternalDNS runs (null when ingress_domain is empty)"
+  value       = try(module.external_dns[0].namespace, null)
+}
+
+output "external_dns_iam_role_arn" {
+  description = "IAM role ARN used by ExternalDNS via IRSA (null when ingress_domain is empty)"
+  value       = try(module.external_dns[0].iam_role_arn, null)
+}
+
 output "frontend_ingress" {
   description = "Per-env Ingress Helm values injected into Argo (enabled, scheme, host, certificate ARN)"
   value       = local.frontend_ingress

@@ -44,7 +44,6 @@ resource "terraform_data" "ingress_guards" {
     ingress_environments = var.ingress_environments
     enabled_environments = var.enabled_environments
     ingress_domain       = var.ingress_domain
-    manage_dns           = var.ingress_manage_dns_records
   }
 
   lifecycle {
@@ -53,10 +52,6 @@ resource "terraform_data" "ingress_guards" {
         for env in var.ingress_environments : contains(var.enabled_environments, env)
       ])
       error_message = "ingress_environments must be a subset of enabled_environments."
-    }
-    precondition {
-      condition     = !var.ingress_manage_dns_records || var.ingress_domain != ""
-      error_message = "ingress_manage_dns_records requires a non-empty ingress_domain."
     }
   }
 }
@@ -138,19 +133,36 @@ module "aws_load_balancer_controller" {
   oidc_provider_arn    = module.eks.oidc_provider_arn
 }
 
-# ACM wildcard + records in the existing public hosted zone (Route 53 domain
-# registration). Skipped when ingress_domain is empty (lab HTTP ALB).
+# ACM wildcard in the existing public hosted zone. Skipped when ingress_domain is empty.
 module "ingress_dns" {
   count  = var.ingress_domain != "" ? 1 : 0
   source = "./modules/ingress-dns"
 
-  domain             = var.ingress_domain
-  cluster_name       = module.eks.cluster_name
-  group_name         = local.ingress_group_name
-  record_names       = local.ingress_alias_record_names
-  manage_dns_records = var.ingress_manage_dns_records
+  domain = var.ingress_domain
 
   depends_on = [terraform_data.ingress_guards]
+}
+
+# Writes Route 53 aliases when Ingress gets an ADDRESS. Same count as ACM (needs a zone).
+module "external_dns" {
+  count  = var.ingress_domain != "" ? 1 : 0
+  source = "./modules/external-dns"
+
+  domain               = var.ingress_domain
+  hosted_zone_arn      = module.ingress_dns[0].zone_arn
+  hosted_zone_id       = module.ingress_dns[0].zone_id
+  region               = var.aws_region
+  txt_owner_id         = var.eks_cluster_name
+  namespace            = var.external_dns_namespace
+  chart_version        = var.external_dns_chart_version
+  service_account_name = var.external_dns_service_account_name
+  iam_role_name        = var.external_dns_iam_role_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  depends_on = [
+    module.ingress_dns,
+    module.aws_load_balancer_controller,
+  ]
 }
 
 module "external_secrets" {
@@ -190,6 +202,7 @@ module "argocd" {
 
   depends_on = [
     module.aws_load_balancer_controller,
+    module.external_dns,
     terraform_data.ingress_guards,
   ]
 }

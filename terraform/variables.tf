@@ -268,6 +268,30 @@ variable "alb_controller_iam_role_name" {
   default     = "bank-of-anthos-aws-lbc"
 }
 
+variable "external_dns_namespace" {
+  description = "Namespace for ExternalDNS"
+  type        = string
+  default     = "external-dns"
+}
+
+variable "external_dns_chart_version" {
+  description = "external-dns Helm chart version (kubernetes-sigs.github.io/external-dns)"
+  type        = string
+  default     = "1.21.1"
+}
+
+variable "external_dns_service_account_name" {
+  description = "ExternalDNS ServiceAccount name (IRSA trust + Helm SA)"
+  type        = string
+  default     = "external-dns"
+}
+
+variable "external_dns_iam_role_name" {
+  description = "IAM role name for ExternalDNS IRSA"
+  type        = string
+  default     = "bank-of-anthos-external-dns"
+}
+
 variable "ingress_environments" {
   description = "App environments that get a public frontend Ingress (must be a subset of enabled_environments). Empty list = no Ingress = no ALB."
   type        = list(string)
@@ -287,7 +311,7 @@ variable "ingress_environments" {
 }
 
 variable "ingress_domain" {
-  description = "Existing public hosted zone name for frontend TLS (e.g. example.com). Empty = lab: HTTP ALB hostname, no ACM. When set, Terraform looks up the zone (does not create it), issues an ACM wildcard, and Argo injects host=boa-<env>.<domain>. Register the domain in Route 53 first."
+  description = "Existing public hosted zone name for frontend TLS (e.g. example.com). Empty = lab: HTTP ALB hostname, no ACM/ExternalDNS. When set, Terraform looks up the zone, issues an ACM wildcard, installs ExternalDNS, and Argo injects host=boa-<env>.<domain>. Register the domain in Route 53 first."
   type        = string
   default     = ""
 
@@ -295,12 +319,6 @@ variable "ingress_domain" {
     condition     = var.ingress_domain == "" || can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$", var.ingress_domain))
     error_message = "ingress_domain must be empty or a DNS name like example.com (no trailing dot, no protocol)."
   }
-}
-
-variable "ingress_manage_dns_records" {
-  description = "Create Route53 alias records to the grouped ALB. Set true only after the Ingress has provisioned the load balancer (second apply). Requires a non-empty ingress_domain."
-  type        = bool
-  default     = false
 }
 
 variable "argocd_repo_url" {

@@ -62,12 +62,10 @@ rds_skip_final_snapshot       = true
 #   ingress_domain empty = lab (HTTP, one ALB per Ingress, URL is *.elb.amazonaws.com).
 #   ingress_domain set  = look up the existing public hosted zone (register the
 #     domain in Route 53 first — do not let this stack create a second zone) +
-#     ACM wildcard; Argo injects host=boa-<env>.<domain> + cert.
-# Alias records are a second apply after the ALB exists:
-#   ingress_manage_dns_records = true
-ingress_environments         = ["dev"]
-ingress_domain               = ""
-ingress_manage_dns_records   = false
+#     ACM wildcard + ExternalDNS (aliases when Ingress has an ADDRESS);
+#     Argo injects host=boa-<env>.<domain> + cert.
+ingress_environments = ["dev"]
+ingress_domain       = ""
 
 # Argo CD (bootstrap via Helm; root App-of-Apps only for enabled_environments)
 # Set the PAT in the shell — never put it in this file or commit it:

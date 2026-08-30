@@ -77,10 +77,6 @@ locals {
 
   ingress_certificate_arn = try(module.ingress_dns[0].certificate_arn, "")
 
-  ingress_alias_record_names = [
-    for env in var.ingress_environments : "${local.ingress_dns_prefix}-${env}"
-  ]
-
   # Per-env Helm values injected by Argo (not committed in values-dev / values-prod).
   frontend_ingress = {
     for env in var.enabled_environments :

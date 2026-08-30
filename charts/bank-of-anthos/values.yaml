@@ -77,7 +77,8 @@ frontend:
     targetPort: 8080
   # Public ALB Ingress. enabled / host / certificateArn are injected at sync by Argo
   # from Terraform (like RDS hosts). Do not set them in values-dev.yaml / values-prod.yaml.
-  # Empty host = lab (own ALB, HTTP :80). Set host = group.name + ACM + 80→443.
+  # Empty host = lab (own ALB, HTTP :80). Set host = group.name + ACM + 80→443
+  # (Terraform injects boa-<env>.<ingress_domain>). ExternalDNS writes the alias.
   ingress:
     enabled: false
     host: ""
