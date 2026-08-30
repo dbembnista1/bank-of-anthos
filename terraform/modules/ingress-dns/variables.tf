@@ -1,5 +1,5 @@
 variable "domain" {
-  description = "Public DNS zone name (e.g. example.com). Creates a hosted zone and ACM cert for this domain."
+  description = "Existing public hosted zone name (e.g. example.com). Looked up, never created or destroyed by this module. ACM cert is issued in this stack."
   type        = string
 }
 
@@ -15,7 +15,7 @@ variable "group_name" {
 }
 
 variable "record_names" {
-  description = "Subdomain labels for alias records (typically ingress_environments: dev, prod)"
+  description = "DNS labels for alias records (e.g. boa-dev, boa-prod). Must match frontend.ingress.host without the zone."
   type        = list(string)
   default     = []
 }

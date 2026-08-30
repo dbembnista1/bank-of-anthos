@@ -287,7 +287,7 @@ variable "ingress_environments" {
 }
 
 variable "ingress_domain" {
-  description = "Public DNS zone for frontend TLS (e.g. example.com). Empty = lab: HTTP ALB hostname, no Route53/ACM. When set, Terraform creates a hosted zone + ACM wildcard; Argo injects host=<env>.<domain>."
+  description = "Existing public hosted zone name for frontend TLS (e.g. example.com). Empty = lab: HTTP ALB hostname, no ACM. When set, Terraform looks up the zone (does not create it), issues an ACM wildcard, and Argo injects host=boa-<env>.<domain>. Register the domain in Route 53 first."
   type        = string
   default     = ""
 

@@ -1,11 +1,11 @@
 output "zone_id" {
-  description = "Route53 hosted zone ID"
-  value       = aws_route53_zone.this.zone_id
+  description = "ID of the existing public hosted zone (looked up, not created)"
+  value       = data.aws_route53_zone.this.zone_id
 }
 
 output "name_servers" {
-  description = "Nameservers to delegate at the domain registrar (required for ACM validation)"
-  value       = aws_route53_zone.this.name_servers
+  description = "Nameservers of the existing hosted zone (already set when the domain was registered in Route 53)"
+  value       = data.aws_route53_zone.this.name_servers
 }
 
 output "certificate_arn" {

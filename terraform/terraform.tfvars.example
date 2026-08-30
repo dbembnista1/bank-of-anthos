@@ -60,8 +60,9 @@ rds_skip_final_snapshot       = true
 # Public frontend Ingress — switches live here, not in values-dev / values-prod.
 #   ingress_environments ⊆ enabled_environments. Empty list = zero Ingresses = zero ALB.
 #   ingress_domain empty = lab (HTTP, one ALB per Ingress, URL is *.elb.amazonaws.com).
-#   ingress_domain set  = hosted zone + ACM wildcard; Argo injects host=<env>.<domain> + cert.
-# ACM validation waits on registrar NS delegation (see output ingress_name_servers).
+#   ingress_domain set  = look up the existing public hosted zone (register the
+#     domain in Route 53 first — do not let this stack create a second zone) +
+#     ACM wildcard; Argo injects host=boa-<env>.<domain> + cert.
 # Alias records are a second apply after the ALB exists:
 #   ingress_manage_dns_records = true
 ingress_environments         = ["dev"]

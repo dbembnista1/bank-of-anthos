@@ -138,7 +138,8 @@ module "aws_load_balancer_controller" {
   oidc_provider_arn    = module.eks.oidc_provider_arn
 }
 
-# Hosted zone + ACM wildcard. Skipped when ingress_domain is empty (lab HTTP ALB).
+# ACM wildcard + records in the existing public hosted zone (Route 53 domain
+# registration). Skipped when ingress_domain is empty (lab HTTP ALB).
 module "ingress_dns" {
   count  = var.ingress_domain != "" ? 1 : 0
   source = "./modules/ingress-dns"
@@ -146,7 +147,7 @@ module "ingress_dns" {
   domain             = var.ingress_domain
   cluster_name       = module.eks.cluster_name
   group_name         = local.ingress_group_name
-  record_names       = var.ingress_environments
+  record_names       = local.ingress_alias_record_names
   manage_dns_records = var.ingress_manage_dns_records
 
   depends_on = [terraform_data.ingress_guards]

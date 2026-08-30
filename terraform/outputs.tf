@@ -200,12 +200,12 @@ output "ingress_certificate_arn" {
 }
 
 output "ingress_hosted_zone_id" {
-  description = "Route53 hosted zone ID (null when ingress_domain is empty)"
+  description = "Existing Route53 public hosted zone ID looked up by ingress_domain (null when empty)"
   value       = try(module.ingress_dns[0].zone_id, null)
 }
 
 output "ingress_name_servers" {
-  description = "Delegate these NS at the registrar before ACM validation can complete"
+  description = "Nameservers of the existing hosted zone (informational; already attached for a Route 53 registered domain)"
   value       = try(module.ingress_dns[0].name_servers, null)
 }
 
