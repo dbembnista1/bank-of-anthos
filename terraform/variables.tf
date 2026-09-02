@@ -134,6 +134,12 @@ variable "eks_node_max_size" {
   default     = 4
 }
 
+variable "enable_monitoring" {
+  description = "Reserve one extra EKS node for kube-prometheus-stack at node group create/deploy. Capacity only — does not install the stack."
+  type        = bool
+  default     = false
+}
+
 variable "ecr_repository_names" {
   description = "ECR repos for Bank of Anthos app images (ledger-db/accounts-db use RDS, not container images)"
   type        = list(string)

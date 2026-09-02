@@ -1,4 +1,8 @@
 locals {
+  # Prod HA needs 3 nodes; kube-prometheus-stack needs one more at create/deploy.
+  # The EKS module ignores desired_size after create — that is fine.
+  eks_node_desired_size = (contains(var.enabled_environments, "prod") ? 3 : 2) + (var.enable_monitoring ? 1 : 0)
+
   # DB roles provisioned for each enabled app environment (accounts + ledger).
   app_db_services = {
     accounts = {
