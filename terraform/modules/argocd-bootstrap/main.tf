@@ -92,7 +92,7 @@ locals {
   }
 
   # ClusterSecretStore (cluster-scoped) — always synced when Argo CD is installed.
-  platform_root_applications = {
+  platform_external_secrets_application = {
     root-platform-external-secrets = {
       namespace  = var.namespace
       finalizers = ["resources-finalizer.argocd.argoproj.io"]
@@ -118,6 +118,79 @@ locals {
       }
     }
   }
+
+  # kube-prometheus-stack CRDs need SSA. Empty grafana.ingress.host = no Ingress (lab).
+  platform_monitoring_application = var.enable_monitoring ? {
+    root-platform-monitoring = {
+      namespace  = var.namespace
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      project    = var.app_project_name
+      annotations = {
+        "argocd.argoproj.io/compare-options" = "ServerSideDiff=true"
+      }
+      source = {
+        repoURL        = var.repo_url
+        path           = var.gitops_platform_monitoring_path
+        targetRevision = var.target_revision
+        helm = {
+          # Stable Grafana Service name: kube-prometheus-stack-grafana (Ingress backend).
+          releaseName = "kube-prometheus-stack"
+          parameters = [
+            {
+              name  = "grafana.ingress.host"
+              value = var.grafana_ingress.host
+            },
+            {
+              name  = "grafana.ingress.certificateArn"
+              value = var.grafana_ingress.certificate_arn
+            },
+            {
+              name  = "grafana.ingress.groupName"
+              value = var.grafana_ingress.group_name
+            },
+          ]
+        }
+      }
+      destination = {
+        server    = local.in_cluster_server
+        namespace = var.monitoring_namespace
+      }
+      ignoreDifferences = [
+        {
+          group = "external-secrets.io"
+          kind  = "ExternalSecret"
+          jqPathExpressions = [
+            ".spec.data[].remoteRef.conversionStrategy",
+            ".spec.data[].remoteRef.decodingStrategy",
+            ".spec.data[].remoteRef.metadataPolicy",
+            ".spec.data[].remoteRef.nullBytePolicy",
+            ".spec.dataFrom[].extract.conversionStrategy",
+            ".spec.dataFrom[].extract.decodingStrategy",
+            ".spec.dataFrom[].extract.metadataPolicy",
+            ".spec.dataFrom[].extract.nullBytePolicy",
+            ".spec.target.deletionPolicy",
+            ".spec.target.template.mergePolicy",
+          ]
+        }
+      ]
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true",
+          "RespectIgnoreDifferences=true",
+        ]
+      }
+    }
+  } : {}
+
+  platform_root_applications = merge(
+    local.platform_external_secrets_application,
+    local.platform_monitoring_application
+  )
 
   root_applications = merge(local.env_root_applications, local.platform_root_applications)
 }

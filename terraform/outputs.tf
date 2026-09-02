@@ -224,6 +224,16 @@ output "frontend_ingress" {
   value       = local.frontend_ingress
 }
 
+output "grafana_ingress" {
+  description = "Grafana Ingress Helm values injected into Argo (host, certificate ARN, group name). Empty host = no Ingress."
+  value       = local.grafana_ingress
+}
+
+output "enable_monitoring" {
+  description = "Whether root-platform-monitoring is synced"
+  value       = var.enable_monitoring
+}
+
 output "jwt_secret_name" {
   description = "Expected Secrets Manager name for JWT (scripts/bootstrap-jwt.ps1)"
   value       = var.jwt_secret_name

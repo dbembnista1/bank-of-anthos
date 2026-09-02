@@ -199,6 +199,9 @@ module "argocd" {
   database_secret_arns       = local.database_secret_arns
   image_registry             = local.ecr_image_registry
   frontend_ingress           = local.frontend_ingress
+  enable_monitoring          = var.enable_monitoring
+  monitoring_namespace       = var.monitoring_namespace
+  grafana_ingress            = local.grafana_ingress
 
   depends_on = [
     module.aws_load_balancer_controller,

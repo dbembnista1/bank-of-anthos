@@ -72,6 +72,38 @@ variable "external_secrets_namespace" {
   default     = "external-secrets"
 }
 
+variable "enable_monitoring" {
+  description = "Create root-platform-monitoring (kube-prometheus-stack GitOps). Off = no Application, no monitoring namespace destination."
+  type        = bool
+  default     = false
+}
+
+variable "gitops_platform_monitoring_path" {
+  description = "Repo path with kube-prometheus-stack wrapper chart"
+  type        = string
+  default     = "gitops/platform/monitoring"
+}
+
+variable "monitoring_namespace" {
+  description = "Destination namespace for root-platform-monitoring"
+  type        = string
+  default     = "monitoring"
+}
+
+variable "grafana_ingress" {
+  description = "Grafana Ingress Helm parameters (host, ACM ARN, ALB group). Empty host = lab, no Ingress."
+  type = object({
+    host            = string
+    certificate_arn = string
+    group_name      = string
+  })
+  default = {
+    host            = ""
+    certificate_arn = ""
+    group_name      = "bank-of-anthos"
+  }
+}
+
 variable "database_hosts" {
   description = "Map of env => { accounts, ledger } RDS hostnames injected into App-of-Apps Helm parameters"
   type = map(object({

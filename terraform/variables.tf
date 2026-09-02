@@ -135,9 +135,15 @@ variable "eks_node_max_size" {
 }
 
 variable "enable_monitoring" {
-  description = "Reserve one extra EKS node for kube-prometheus-stack at node group create/deploy. Capacity only — does not install the stack."
+  description = "Sync kube-prometheus-stack via Argo (root-platform-monitoring) and reserve one extra EKS node at create/deploy."
   type        = bool
   default     = false
+}
+
+variable "monitoring_namespace" {
+  description = "Destination namespace for kube-prometheus-stack (AppProject whitelist + root Application)"
+  type        = string
+  default     = "monitoring"
 }
 
 variable "ecr_repository_names" {

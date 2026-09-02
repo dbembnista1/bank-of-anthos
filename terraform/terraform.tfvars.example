@@ -31,9 +31,10 @@ eks_node_instance_types     = ["t3.medium"]
 eks_node_min_size           = 2
 eks_node_max_size           = 4
 
-# Extra node for kube-prometheus-stack. Capacity only — no GitOps Application yet.
-# Formula: desired = (prod ? 3 : 2) + (monitoring ? 1 : 0). Set true before first
-# apply so the node group is created large enough for the stack.
+# kube-prometheus-stack via GitOps (root-platform-monitoring) + extra node at create.
+# Formula: desired = (prod ? 3 : 2) + (monitoring ? 1 : 0).
+# Grafana Ingress only when ingress_domain is set (boa-grafana.<domain> on the shared ALB).
+# Empty domain = ClusterIP + port-forward. Run .\scripts\bootstrap-grafana.ps1 after apply.
 enable_monitoring = false
 
 # ECR (app images only; DBs are on RDS)

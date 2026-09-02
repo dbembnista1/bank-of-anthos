@@ -34,7 +34,8 @@ locals {
 
   argocd_destination_namespaces = concat(
     local.app_namespaces,
-    [var.eso_namespace]
+    [var.eso_namespace],
+    var.enable_monitoring ? [var.monitoring_namespace] : []
   )
 
   gitops_app_paths = {
@@ -98,5 +99,12 @@ locals {
       )
       certificate_arn = contains(var.ingress_environments, env) && var.ingress_domain != "" ? local.ingress_certificate_arn : ""
     }
+  }
+
+  # Grafana Ingress: empty host = lab (ClusterIP, no Ingress). Host set = shared ALB + TLS.
+  grafana_ingress = {
+    host            = var.enable_monitoring && var.ingress_domain != "" ? "${local.ingress_dns_prefix}-grafana.${var.ingress_domain}" : ""
+    certificate_arn = var.enable_monitoring && var.ingress_domain != "" ? local.ingress_certificate_arn : ""
+    group_name      = local.ingress_group_name
   }
 }

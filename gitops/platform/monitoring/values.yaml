@@ -1,5 +1,5 @@
-# Desired state for cluster-wide monitoring. Nothing is applied until a root
-# Application points here (same pattern as gitops/platform/external-secrets).
+# Desired state for cluster-wide monitoring. Synced by root-platform-monitoring
+# (Terraform, when enable_monitoring). Same pattern as gitops/platform/external-secrets.
 
 # Grafana admin via ESO. SM JSON keys are admin_user / admin_password (gjson).
 # Target Secret keys must match kube-prometheus-stack.grafana.admin.* below.
@@ -10,6 +10,17 @@ grafanaAdmin:
   remoteKey: bank-of-anthos-grafana-admin
   userKey: admin-user
   passwordKey: admin-password
+
+# Wrapper-level Ingress (not the grafana subchart). Terraform injects host /
+# certificateArn / groupName. Empty host = lab, no Ingress.
+grafana:
+  ingress:
+    host: ""
+    certificateArn: ""
+    groupName: bank-of-anthos
+    # helm.releaseName kube-prometheus-stack → Service kube-prometheus-stack-grafana.
+    serviceName: kube-prometheus-stack-grafana
+    servicePort: 80
 
 kube-prometheus-stack:
   defaultRules:
@@ -42,7 +53,7 @@ kube-prometheus-stack:
       existingSecret: grafana-admin
       userKey: admin-user
       passwordKey: admin-password
-    # Off until Terraform injects host (boa-grafana.<ingress_domain>).
+    # Subchart Ingress stays off — we render templates/grafana-ingress.yaml instead.
     ingress:
       enabled: false
       hosts: []

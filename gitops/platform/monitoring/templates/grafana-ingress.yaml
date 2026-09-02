@@ -1,0 +1,31 @@
+{{- if .Values.grafana.ingress.host }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: platform-monitoring
+    app.kubernetes.io/part-of: bank-of-anthos
+    app.kubernetes.io/component: grafana
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    alb.ingress.kubernetes.io/group.name: {{ .Values.grafana.ingress.groupName | quote }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ required "grafana.ingress.certificateArn is required when host is set" .Values.grafana.ingress.certificateArn | quote }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: {{ .Values.grafana.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.grafana.ingress.serviceName | quote }}
+                port:
+                  number: {{ .Values.grafana.ingress.servicePort }}
+{{- end }}
