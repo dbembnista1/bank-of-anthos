@@ -32,10 +32,11 @@ locals {
     for env in var.enabled_environments : "bank-of-anthos-${env}"
   ]
 
+  # kube-system: kube-prometheus-stack creates CoreDNS and kube-proxy scrape Services there.
   argocd_destination_namespaces = concat(
     local.app_namespaces,
     [var.eso_namespace],
-    var.enable_monitoring ? [var.monitoring_namespace] : []
+    var.enable_monitoring ? [var.monitoring_namespace, "kube-system"] : []
   )
 
   gitops_app_paths = {

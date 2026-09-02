@@ -141,7 +141,7 @@ variable "enable_monitoring" {
 }
 
 variable "monitoring_namespace" {
-  description = "Destination namespace for kube-prometheus-stack (AppProject whitelist + root Application)"
+  description = "Destination namespace for kube-prometheus-stack (AppProject whitelist + root Application). kube-system is also whitelisted when enable_monitoring is true."
   type        = string
   default     = "monitoring"
 }
@@ -364,9 +364,9 @@ variable "argocd_target_revision" {
 }
 
 variable "argocd_chart_version" {
-  description = "argo-cd Helm chart version"
+  description = "argo-cd Helm chart version (9.4.13 = Argo CD v3.3.4; includes K8s 1.33+ schema for terminatingReplicas / EKS 1.35 SSD)"
   type        = string
-  default     = "7.8.14"
+  default     = "9.4.13"
 }
 
 variable "argocd_apps_chart_version" {

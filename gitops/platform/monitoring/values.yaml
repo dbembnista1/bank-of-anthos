@@ -31,6 +31,8 @@ kube-prometheus-stack:
       kubeSchedulerRecording: false
 
   # EKS control plane is not scrapeable as in-cluster pods.
+  # coreDns and kubeProxy stay on — they create scrape Services in kube-system
+  # (AppProject destination is added by Terraform when enable_monitoring).
   kubeEtcd:
     enabled: false
   kubeScheduler:
