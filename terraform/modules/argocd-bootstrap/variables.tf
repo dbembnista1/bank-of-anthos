@@ -5,9 +5,9 @@ variable "namespace" {
 }
 
 variable "chart_version" {
-  description = "argo-cd Helm chart version (argo-helm)"
+  description = "argo-cd Helm chart version (argo-helm). 9.4.13 ships Argo CD v3.3.4 (K8s 1.33+ OpenAPI schema)."
   type        = string
-  default     = "7.8.14"
+  default     = "9.4.13"
 }
 
 variable "apps_chart_version" {
@@ -70,6 +70,38 @@ variable "external_secrets_namespace" {
   description = "Destination namespace for the platform External Secrets App-of-Apps (ESO operator ns)"
   type        = string
   default     = "external-secrets"
+}
+
+variable "enable_monitoring" {
+  description = "Create root-platform-monitoring (kube-prometheus-stack GitOps). Off = no Application, no monitoring or kube-system destinations."
+  type        = bool
+  default     = false
+}
+
+variable "gitops_platform_monitoring_path" {
+  description = "Repo path with kube-prometheus-stack wrapper chart"
+  type        = string
+  default     = "gitops/platform/monitoring"
+}
+
+variable "monitoring_namespace" {
+  description = "Destination namespace for root-platform-monitoring"
+  type        = string
+  default     = "monitoring"
+}
+
+variable "grafana_ingress" {
+  description = "Grafana Ingress Helm parameters (host, ACM ARN, ALB group). Empty host = lab, no Ingress."
+  type = object({
+    host            = string
+    certificate_arn = string
+    group_name      = string
+  })
+  default = {
+    host            = ""
+    certificate_arn = ""
+    group_name      = "bank-of-anthos"
+  }
 }
 
 variable "database_hosts" {

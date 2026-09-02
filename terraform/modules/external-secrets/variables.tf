@@ -39,7 +39,7 @@ variable "oidc_provider" {
 }
 
 variable "secrets_manager_arns" {
-  description = "Secrets Manager ARNs ESO may read (RDS master secrets + JWT pattern)"
+  description = "Secrets Manager ARNs ESO may read (RDS master secrets + JWT + Grafana admin patterns)"
   type        = list(string)
 
   validation {

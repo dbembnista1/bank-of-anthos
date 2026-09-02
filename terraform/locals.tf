@@ -1,4 +1,8 @@
 locals {
+  # Prod HA needs 3 nodes; kube-prometheus-stack needs one more at create/deploy.
+  # The EKS module ignores desired_size after create — that is fine.
+  eks_node_desired_size = (contains(var.enabled_environments, "prod") ? 3 : 2) + (var.enable_monitoring ? 1 : 0)
+
   # DB roles provisioned for each enabled app environment (accounts + ledger).
   app_db_services = {
     accounts = {
@@ -28,9 +32,11 @@ locals {
     for env in var.enabled_environments : "bank-of-anthos-${env}"
   ]
 
+  # kube-system: kube-prometheus-stack creates CoreDNS and kube-proxy scrape Services there.
   argocd_destination_namespaces = concat(
     local.app_namespaces,
-    [var.eso_namespace]
+    [var.eso_namespace],
+    var.enable_monitoring ? [var.monitoring_namespace, "kube-system"] : []
   )
 
   gitops_app_paths = {
@@ -60,12 +66,16 @@ locals {
     }
   }
 
-  # ESO IRSA: JWT (bootstrap script) + RDS-managed master secrets (ARN only in state).
-  jwt_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
+  # ESO IRSA: RDS-managed master secrets + bootstrap scripts (ARN only in state).
+  jwt_secret_arn_pattern           = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
+  grafana_admin_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.grafana_admin_secret_name}-*"
 
   eso_secrets_manager_arns = concat(
     values(module.rds.master_user_secret_arns),
-    [local.jwt_secret_arn_pattern]
+    [
+      local.jwt_secret_arn_pattern,
+      local.grafana_admin_secret_arn_pattern,
+    ]
   )
 
   # Must match alb.ingress.kubernetes.io/group.name in the umbrella chart (TLS only).
@@ -90,5 +100,12 @@ locals {
       )
       certificate_arn = contains(var.ingress_environments, env) && var.ingress_domain != "" ? local.ingress_certificate_arn : ""
     }
+  }
+
+  # Grafana Ingress: empty host = lab (ClusterIP, no Ingress). Host set = shared ALB + TLS.
+  grafana_ingress = {
+    host            = var.enable_monitoring && var.ingress_domain != "" ? "${local.ingress_dns_prefix}-grafana.${var.ingress_domain}" : ""
+    certificate_arn = var.enable_monitoring && var.ingress_domain != "" ? local.ingress_certificate_arn : ""
+    group_name      = local.ingress_group_name
   }
 }

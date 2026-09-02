@@ -84,7 +84,7 @@ module "eks" {
   node_instance_types = var.eks_node_instance_types
   node_min_size       = var.eks_node_min_size
   node_max_size       = var.eks_node_max_size
-  node_desired_size   = contains(var.enabled_environments, "prod") ? 3 : 2
+  node_desired_size   = local.eks_node_desired_size
 }
 
 module "ecr" {
@@ -199,6 +199,9 @@ module "argocd" {
   database_secret_arns       = local.database_secret_arns
   image_registry             = local.ecr_image_registry
   frontend_ingress           = local.frontend_ingress
+  enable_monitoring          = var.enable_monitoring
+  monitoring_namespace       = var.monitoring_namespace
+  grafana_ingress            = local.grafana_ingress
 
   depends_on = [
     module.aws_load_balancer_controller,

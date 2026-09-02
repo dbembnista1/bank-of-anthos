@@ -134,6 +134,18 @@ variable "eks_node_max_size" {
   default     = 4
 }
 
+variable "enable_monitoring" {
+  description = "Sync kube-prometheus-stack via Argo (root-platform-monitoring) and reserve one extra EKS node at create/deploy."
+  type        = bool
+  default     = false
+}
+
+variable "monitoring_namespace" {
+  description = "Destination namespace for kube-prometheus-stack (AppProject whitelist + root Application). kube-system is also whitelisted when enable_monitoring is true."
+  type        = string
+  default     = "monitoring"
+}
+
 variable "ecr_repository_names" {
   description = "ECR repos for Bank of Anthos app images (ledger-db/accounts-db use RDS, not container images)"
   type        = list(string)
@@ -218,6 +230,12 @@ variable "jwt_secret_name" {
   description = "Secrets Manager name used by scripts/bootstrap-jwt.ps1 (IRSA ARN pattern for ESO)"
   type        = string
   default     = "bank-of-anthos-jwt"
+}
+
+variable "grafana_admin_secret_name" {
+  description = "Secrets Manager name used by scripts/bootstrap-grafana.ps1 (IRSA ARN pattern for ESO). Must match gitops/platform/monitoring grafanaAdmin.remoteKey."
+  type        = string
+  default     = "bank-of-anthos-grafana-admin"
 }
 
 variable "eso_namespace" {
@@ -346,9 +364,9 @@ variable "argocd_target_revision" {
 }
 
 variable "argocd_chart_version" {
-  description = "argo-cd Helm chart version"
+  description = "argo-cd Helm chart version (9.4.13 = Argo CD v3.3.4; includes K8s 1.33+ schema for terminatingReplicas / EKS 1.35 SSD)"
   type        = string
-  default     = "7.8.14"
+  default     = "9.4.13"
 }
 
 variable "argocd_apps_chart_version" {

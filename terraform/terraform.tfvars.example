@@ -31,6 +31,12 @@ eks_node_instance_types     = ["t3.medium"]
 eks_node_min_size           = 2
 eks_node_max_size           = 4
 
+# kube-prometheus-stack via GitOps (root-platform-monitoring) + extra node at create.
+# Formula: desired = (prod ? 3 : 2) + (monitoring ? 1 : 0).
+# Grafana Ingress only when ingress_domain is set (boa-grafana.<domain> on the shared ALB).
+# Empty domain = ClusterIP + port-forward. Run .\scripts\bootstrap-grafana.ps1 after apply.
+enable_monitoring = false
+
 # ECR (app images only; DBs are on RDS)
 # ecr_repository_names defaults cover all 7 Bank of Anthos services
 ecr_lifecycle_keep_last = 10
@@ -52,6 +58,7 @@ rds_skip_final_snapshot       = true
 # External Secrets Operator (Helm + IRSA). DB secret ARNs and RDS hosts are injected
 # into Argo by Terraform (helm.parameters) — passwords never enter Terraform state.
 # JWT: .\scripts\bootstrap-jwt.ps1 after apply (name = jwt_secret_name).
+# Grafana admin: .\scripts\bootstrap-grafana.ps1 after apply (name = grafana_admin_secret_name).
 
 # AWS Load Balancer Controller (Helm + IRSA). Always installed; ALB is created
 # only when an Ingress exists (ingress_environments is non-empty after GitOps sync).
