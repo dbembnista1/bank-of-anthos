@@ -1,0 +1,9 @@
+apiVersion: v2
+name: platform-monitoring
+description: kube-prometheus-stack wrapper plus Grafana admin ExternalSecret (one stack per cluster)
+type: application
+version: 0.1.0
+dependencies:
+  - name: kube-prometheus-stack
+    version: 88.6.3
+    repository: https://prometheus-community.github.io/helm-charts

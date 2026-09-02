@@ -1,0 +1,60 @@
+# Desired state for cluster-wide monitoring. Nothing is applied until a root
+# Application points here (same pattern as gitops/platform/external-secrets).
+
+# Grafana admin via ESO. SM JSON keys are admin_user / admin_password (gjson).
+# Target Secret keys must match kube-prometheus-stack.grafana.admin.* below.
+clusterSecretStoreName: aws-secrets-manager
+refreshInterval: 1h
+grafanaAdmin:
+  secretName: grafana-admin
+  remoteKey: bank-of-anthos-grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
+kube-prometheus-stack:
+  defaultRules:
+    rules:
+      etcd: false
+      kubeControllerManager: false
+      kubeSchedulerAlerting: false
+      kubeSchedulerRecording: false
+
+  # EKS control plane is not scrapeable as in-cluster pods.
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+
+  alertmanager:
+    ingress:
+      enabled: false
+    alertmanagerSpec:
+      replicas: 1
+      storage: {}
+
+  grafana:
+    replicas: 1
+    persistence:
+      enabled: false
+    admin:
+      existingSecret: grafana-admin
+      userKey: admin-user
+      passwordKey: admin-password
+    # Off until Terraform injects host (boa-grafana.<ingress_domain>).
+    ingress:
+      enabled: false
+      hosts: []
+    service:
+      type: ClusterIP
+
+  prometheus:
+    ingress:
+      enabled: false
+    prometheusSpec:
+      replicas: 1
+      retention: 12h
+      # emptyDir — no PVC (lab FinOps; data is lost on restart).
+      storageSpec:
+        emptyDir: {}
