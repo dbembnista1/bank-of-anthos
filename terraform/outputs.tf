@@ -229,6 +229,11 @@ output "jwt_secret_name" {
   value       = var.jwt_secret_name
 }
 
+output "grafana_admin_secret_name" {
+  description = "Expected Secrets Manager name for Grafana admin (scripts/bootstrap-grafana.ps1)"
+  value       = var.grafana_admin_secret_name
+}
+
 output "argocd_namespace" {
   description = "Namespace where Argo CD runs (port-forward svc/argocd-server)"
   value       = module.argocd.namespace

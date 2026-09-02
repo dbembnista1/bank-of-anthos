@@ -57,6 +57,7 @@ rds_skip_final_snapshot       = true
 # External Secrets Operator (Helm + IRSA). DB secret ARNs and RDS hosts are injected
 # into Argo by Terraform (helm.parameters) — passwords never enter Terraform state.
 # JWT: .\scripts\bootstrap-jwt.ps1 after apply (name = jwt_secret_name).
+# Grafana admin: .\scripts\bootstrap-grafana.ps1 after apply (name = grafana_admin_secret_name).
 
 # AWS Load Balancer Controller (Helm + IRSA). Always installed; ALB is created
 # only when an Ingress exists (ingress_environments is non-empty after GitOps sync).

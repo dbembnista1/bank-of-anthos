@@ -226,6 +226,12 @@ variable "jwt_secret_name" {
   default     = "bank-of-anthos-jwt"
 }
 
+variable "grafana_admin_secret_name" {
+  description = "Secrets Manager name used by scripts/bootstrap-grafana.ps1 (IRSA ARN pattern for ESO). Must match gitops/platform/monitoring grafanaAdmin.remoteKey."
+  type        = string
+  default     = "bank-of-anthos-grafana-admin"
+}
+
 variable "eso_namespace" {
   description = "Namespace for External Secrets Operator"
   type        = string

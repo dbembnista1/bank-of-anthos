@@ -64,12 +64,16 @@ locals {
     }
   }
 
-  # ESO IRSA: JWT (bootstrap script) + RDS-managed master secrets (ARN only in state).
-  jwt_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
+  # ESO IRSA: RDS-managed master secrets + bootstrap scripts (ARN only in state).
+  jwt_secret_arn_pattern           = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.jwt_secret_name}-*"
+  grafana_admin_secret_arn_pattern = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.grafana_admin_secret_name}-*"
 
   eso_secrets_manager_arns = concat(
     values(module.rds.master_user_secret_arns),
-    [local.jwt_secret_arn_pattern]
+    [
+      local.jwt_secret_arn_pattern,
+      local.grafana_admin_secret_arn_pattern,
+    ]
   )
 
   # Must match alb.ingress.kubernetes.io/group.name in the umbrella chart (TLS only).
