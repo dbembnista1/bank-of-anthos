@@ -1,5 +1,5 @@
-# Core infrastructure — copy to terraform.tfvars and fill in values.
-# terraform.tfvars is in .gitignore — do not commit personal or secret values.
+# Template for forks. This repo commits terraform/terraform.tfvars (knobs, no secrets).
+# Copy to terraform.tfvars and adjust. PAT: TF_VAR_argocd_gh_token — never in that file.
 
 aws_region  = "eu-central-1"
 environment = "shared"

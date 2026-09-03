@@ -4,6 +4,7 @@
 *.tfstate.*
 crash.log
 *.tfvars
+!terraform/terraform.tfvars
 backend.conf
 
 # Generated at deploy time by deploy-custodian.yml

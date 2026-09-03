@@ -1,0 +1,144 @@
+# fmt / validate / plan for terraform/. Never apply.
+# PR: comment with the plan. Dispatch: job summary only (no GitHub issue to comment on).
+# App CI does not talk to EKS; this job may (kubernetes/helm providers via aws eks get-token).
+name: terraform-plan
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform-plan.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  # Required by var.argocd_gh_token (no default). Same PAT bootstrap stores as GH_PAT.
+  TF_VAR_argocd_gh_token: ${{ secrets.GH_PAT }}
+
+defaults:
+  run:
+    working-directory: terraform
+    shell: bash
+
+jobs:
+  plan:
+    name: fmt, validate, plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require GH_PAT
+        run: |
+          if [ -z "${TF_VAR_argocd_gh_token}" ]; then
+            echo "Secret GH_PAT is empty. Bootstrap writes it (oidc.tf) for TF_VAR_argocd_gh_token."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Write backend.conf
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          cat > backend.conf <<EOF
+          bucket         = "${TF_STATE_BUCKET}"
+          key            = "terraform.tfstate"
+          region         = "${AWS_REGION}"
+          dynamodb_table = "${TF_STATE_DYNAMODB_TABLE}"
+          EOF
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.4"
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -backend-config=backend.conf -lockfile=readonly
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan 2>&1 | tee plan.txt
+
+      - name: Job summary
+        if: always() && hashFiles('terraform/plan.txt') != ''
+        run: |
+          {
+            echo "## Terraform plan"
+            echo
+            echo '```'
+            head -c 200000 plan.txt
+            echo
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Comment plan on PR
+        if: always() && github.event_name == 'pull_request' && hashFiles('terraform/plan.txt') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- terraform-plan -->';
+            let body = fs.readFileSync('terraform/plan.txt', 'utf8');
+            const max = 55000;
+            if (body.length > max) {
+              body = body.slice(0, max) + '\n... truncated ...\n';
+            }
+            const outcome = '${{ steps.plan.outcome }}';
+            const comment = `${marker}
+            #### Terraform plan \`${outcome}\`
+
+            <details><summary>Show plan</summary>
+
+            \`\`\`
+            ${body}
+            \`\`\`
+
+            </details>
+            `;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              (c) => c.user.type === 'Bot' && c.body.includes(marker)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
