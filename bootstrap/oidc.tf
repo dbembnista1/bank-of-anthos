@@ -60,7 +60,8 @@ resource "github_actions_secret" "aws_oidc_role_arn" {
   plaintext_value = aws_iam_role.github_actions.arn
 }
 
-# GitHub PAT forwarded as a secret so terraform.yml can post PR plan comments
+# GitHub PAT for TF_VAR_argocd_gh_token in terraform-plan.yaml / terraform-apply.yaml.
+# PR plan comments use GITHUB_TOKEN, not this secret.
 resource "github_actions_secret" "gh_pat" {
   count           = var.github_token != null ? 1 : 0
   repository      = var.github_repo_name
@@ -68,8 +69,8 @@ resource "github_actions_secret" "gh_pat" {
   plaintext_value = var.github_token
 }
 
-# Backend config variables — used by terraform-plan.yml and terraform-apply.yml
-# to dynamically configure the S3 backend without hardcoding bucket names in code
+# Backend config — terraform-plan.yaml and terraform-apply.yaml write backend.conf
+# from these variables so the bucket name is not hardcoded in Git.
 resource "github_actions_variable" "tf_state_bucket" {
   repository    = var.github_repo_name
   variable_name = "TF_STATE_BUCKET"
