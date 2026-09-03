@@ -37,10 +37,10 @@ variable "cluster_endpoint_private_access" {
   default     = true
 }
 
-variable "enable_cluster_creator_admin_permissions" {
-  description = "Grant the Terraform caller admin access via EKS access entry (avoids lock-out after create)"
-  type        = bool
-  default     = true
+variable "github_actions_role_name" {
+  description = "IAM role name created by bootstrap OIDC (CI). Empty = <cluster_name>-github-oidc-role."
+  type        = string
+  default     = ""
 }
 
 variable "node_instance_types" {

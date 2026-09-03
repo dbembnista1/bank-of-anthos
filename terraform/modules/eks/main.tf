@@ -14,8 +14,33 @@ module "eks" {
   cluster_endpoint_public_access  = var.cluster_endpoint_public_access
   cluster_endpoint_private_access = var.cluster_endpoint_private_access
 
-  # Required in module v20+ so the identity running Terraform can manage the cluster
-  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  # Do not bind admin to the Terraform caller (GHA vs laptop). Explicit entries below.
+  enable_cluster_creator_admin_permissions = false
+
+  access_entries = {
+    cluster_admin = {
+      principal_arn = aws_iam_role.cluster_admin.arn
+      policy_associations = {
+        cluster_admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+    github_actions = {
+      principal_arn = data.aws_iam_role.github_actions.arn
+      policy_associations = {
+        cluster_admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   # Creates IAM OIDC provider for IRSA (External Secrets, ALB Controller, etc.)
   enable_irsa = true

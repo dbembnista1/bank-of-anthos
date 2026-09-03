@@ -55,7 +55,7 @@ output "cluster_primary_security_group_id" {
 }
 
 output "cluster_admin_role_arn" {
-  description = "IAM role to assume for kubectl (aws eks update-kubeconfig --role-arn). Access entry is added in a follow-up."
+  description = "IAM role to assume for kubectl (aws eks update-kubeconfig --role-arn)"
   value       = aws_iam_role.cluster_admin.arn
 }
 

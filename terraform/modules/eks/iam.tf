@@ -1,8 +1,13 @@
-# Humans and CI assume this role for kubectl; EKS access entries land in a later commit.
+# Humans assume this role for kubectl (access entry on the cluster). CI uses the
+# GitHub OIDC role entry directly — no assume-role in the kubernetes/helm providers.
 # Trust is the account root so forks do not hardcode an IAM user. Any principal in this
 # account that is allowed sts:AssumeRole (e.g. AdministratorAccess) can assume it.
 
 data "aws_caller_identity" "current" {}
+
+data "aws_iam_role" "github_actions" {
+  name = var.github_actions_role_name != "" ? var.github_actions_role_name : "${var.cluster_name}-github-oidc-role"
+}
 
 data "aws_iam_policy_document" "cluster_admin_assume" {
   statement {
