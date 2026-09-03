@@ -59,6 +59,11 @@ output "eks_cluster_security_group_id" {
   value       = module.eks.cluster_security_group_id
 }
 
+output "eks_cluster_admin_role_arn" {
+  description = "Assume this role for kubectl: aws eks update-kubeconfig --name <cluster> --role-arn <this>"
+  value       = module.eks.cluster_admin_role_arn
+}
+
 output "ecr_repository_urls" {
   description = "Map of ECR repository name => URL (CI push / Helm image values)"
   value       = module.ecr.repository_urls

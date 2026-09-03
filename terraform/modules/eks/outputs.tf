@@ -53,3 +53,13 @@ output "cluster_primary_security_group_id" {
   description = "Cluster primary security group created by EKS"
   value       = module.eks.cluster_primary_security_group_id
 }
+
+output "cluster_admin_role_arn" {
+  description = "IAM role to assume for kubectl (aws eks update-kubeconfig --role-arn). Access entry is added in a follow-up."
+  value       = aws_iam_role.cluster_admin.arn
+}
+
+output "cluster_admin_role_name" {
+  description = "Name of the cluster-admin IAM role"
+  value       = aws_iam_role.cluster_admin.name
+}
