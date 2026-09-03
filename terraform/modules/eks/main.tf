@@ -17,6 +17,12 @@ module "eks" {
   # Do not bind admin to the Terraform caller (GHA vs laptop). Explicit entries below.
   enable_cluster_creator_admin_permissions = false
 
+  # Same reason: default KMS admin is the current caller and flips between GHA and the laptop.
+  kms_key_administrators = [
+    aws_iam_role.cluster_admin.arn,
+    data.aws_iam_role.github_actions.arn,
+  ]
+
   access_entries = {
     cluster_admin = {
       principal_arn = aws_iam_role.cluster_admin.arn
