@@ -32,6 +32,7 @@ npm-debug.log*
 *.md
 *.mdc
 !README.md
+!docs/**/*.md
 
 # Java / Python build artifacts (vendored BoA src)
 **/target/
