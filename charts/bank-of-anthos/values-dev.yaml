@@ -9,38 +9,38 @@
 frontend:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 userservice:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 contacts:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 ledgerWriter:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 balanceReader:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 transactionHistory:
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 loadgenerator:
   enabled: true
   replicas: 1
   image:
-    tag: "48540dd"
+    tag: "cc47c35"
 
 dbInit:
   enabled: true
