@@ -1,109 +1,89 @@
 # Bank of Anthos on AWS EKS
 
-GitOps deployment of [Google's Bank of Anthos](https://github.com/GoogleCloudPlatform/bank-of-anthos) on a shared Amazon EKS cluster. Infrastructure is Terraform; images are built in GitHub Actions; **only Argo CD** deploys to the cluster.
+GitOps deployment of [Google's Bank of Anthos](https://github.com/GoogleCloudPlatform/bank-of-anthos) on a shared Amazon EKS cluster.
 
-This is a portfolio lab: AWS, Terraform, EKS, Helm, Argo CD, secrets, and FinOps -- not a fork of the upstream GKE manifests.
+Infrastructure is Terraform. Images are built in GitHub Actions (OIDC → ECR). **Only Argo CD** deploys the application. Terraform CI/CD applies the platform (`terraform/`).
 
-**In progress:** public ALB Ingress, Prometheus/Grafana, operations runbook. The platform below is already running.
+Stack: AWS, Terraform, EKS, Helm, Argo CD, External Secrets, ALB. Not a fork of the upstream GKE manifests.
+
+Optional TLS on an existing Route 53 zone, e.g. **boa-dev.dbembnista.com** (app) and **boa-grafana.dbembnista.com** (Grafana). 
 
 ## Architecture
 
-One VPC and one EKS cluster. `dev` / `prod` are Kubernetes namespaces plus **dedicated** RDS instances -- databases are never shared across environments, and never run in the cluster.
+One VPC and one EKS cluster. `dev` / `prod` are Kubernetes namespaces plus **dedicated** RDS instances — databases are never shared across environments, and never run in the cluster.
 
-```mermaid
-flowchart TB
-  subgraph ci [CI - GitHub Actions]
-    SRC[src/ 7 services] --> BUILD[docker build]
-    BUILD -->|OIDC no static keys| ECR
-    BUILD --> DEVTAGS[commit tags to values-dev.yaml]
-    DEVTAGS -.->|manual workflow| PRODTAGS[copy tags to values-prod.yaml]
-  end
+Public UI shares one internet-facing ALB (TLS, ACM wildcard, ExternalDNS → Route 53). Argo CD stays ClusterIP (port-forward). Prometheus and Alertmanager are not exposed.
 
-  subgraph git [Git - desired state]
-    HELM[charts/bank-of-anthos]
-    DEVTAGS --> HELM
-    PRODTAGS --> HELM
-  end
-
-  subgraph cd [CD - Argo CD pull]
-    HELM --> ARGO[App-of-Apps]
-    ARGO --> NSDEV[bank-of-anthos-dev]
-    ARGO --> NSPROD[bank-of-anthos-prod]
-  end
-
-  subgraph aws [AWS]
-    ECR
-    EKS[EKS 1.35 - private nodes]
-    RDS[(RDS PostgreSQL per env)]
-    SM[Secrets Manager]
-    ESO[External Secrets Operator]
-    NSDEV --> EKS
-    NSPROD --> EKS
-    EKS --> RDS
-    ESO -->|IRSA| SM
-  end
-```
+![Architecture: request path on EKS, GitOps pull via Argo CD, Terraform platform CI/CD](docs/bank_of_anthos_arch.png)
 
 | Layer | Choice |
 |---|---|
 | Network | Custom VPC, 2 AZs, public + private subnets, single NAT (lab cost) |
-| Cluster | EKS 1.35, managed node group in **private** subnets, IRSA enabled |
-| Data | Amazon RDS PostgreSQL 16 -- accounts + ledger **per enabled env** |
-| Secrets | Secrets Manager -> External Secrets Operator -> Kubernetes Secrets |
-| App packaging | Helm umbrella chart (`charts/bank-of-anthos`) |
+| Cluster | EKS 1.35, managed node group in **private** subnets, IRSA enabled. VPC is first-party; EKS is a thin wrapper around `terraform-aws-modules/eks` |
+| Data | Amazon RDS PostgreSQL 16 — accounts + ledger **per enabled env** |
+| Secrets | Secrets Manager → External Secrets Operator → Kubernetes Secrets |
+| Ingress | AWS Load Balancer Controller (Helm + IRSA). With `ingress_domain`: one ALB, ACM, ExternalDNS. Empty domain: lab HTTP ALB per Ingress |
+| Observability | kube-prometheus-stack via GitOps. Grafana on the shared ALB when a domain is set; Prometheus/Alertmanager stay private |
+| App packaging | Helm umbrella (`charts/bank-of-anthos`) |
 | GitOps | Argo CD (Helm via Terraform) + App-of-Apps |
 | Images | ECR; tag = git short SHA |
 
-Frontend is `ClusterIP` today (port-forward). Internet-facing ALB is the next phase.
+## Screenshots
+
+While the lab is up (infra is destroyed outside demos):
+
+| Frontend | Argo CD |
+|---|---|
+| ![Frontend (boa-dev)](docs/screenshots/frontend.png) | ![Argo CD Applications](docs/screenshots/argocd.png) |
+| **Grafana** | **GitHub Actions** |
+| ![Grafana (boa-grafana)](docs/screenshots/grafana.png) | ![CI workflows](docs/screenshots/github-actions.png) |
 
 ## Decisions
 
-- **RDS, not in-cluster Postgres.** Upstream ships `accounts-db` / `ledger-db` pods. Here those images are not built; schema is seeded by Helm Jobs against RDS.
-- **One cluster, two environments.** Isolation is namespaces (`bank-of-anthos-dev` / `-prod`) plus separate RDS. `enabled_environments` in Terraform defaults to `["dev"]` so prod is an explicit cost switch.
-- **Bootstrap is local state; everything else is remote.** `bootstrap/` creates the S3 bucket, DynamoDB lock, and GitHub OIDC role once. `terraform/` uses that backend.
-- **CI never talks to EKS.** GitHub Actions builds, pushes to ECR, and commits image tags. No `kubeconfig` in Actions. Argo CD is the only deployer.
-- **Prod is a manual gate.** `values-dev.yaml` bumps automatically after a green build. `values-prod.yaml` changes only via `workflow_dispatch`, then a **manual** Argo sync (prod Applications have no auto-sync).
-- **Two OIDC providers.** GitHub OIDC (`bootstrap/`) is for CI assuming an IAM role. EKS OIDC / IRSA is for in-cluster ServiceAccounts (ESO today; ALB Controller next). They are not interchangeable.
-- **No secrets in Git.** RDS passwords stay in Secrets Manager (RDS-managed). JWT material is written by `scripts/bootstrap-jwt.ps1`. Helm values hold hosts and secret *names*, not credentials. ECR registry and RDS hostnames are injected by Terraform as Argo Helm parameters -- the account ID is not committed.
-- **Write the simple modules; wrap the hard ones.** VPC is first-party. EKS is a thin wrapper around `terraform-aws-modules/eks/aws`. Platform add-ons (ESO, later ALB Controller) are separate Terraform modules (Helm + IRSA), not stuffed into the EKS module.
-- **Node `desired_size` is not a Terraform loop.** The EKS module ignores ASG desired count after create (`min` / `max` stay in Terraform). No Cluster Autoscaler: replica counts are fixed in Helm, and lab spend should not surprise you. Scale-out is a conscious `aws eks update-nodegroup-config`. A `t3.medium` with VPC CNI holds on the order of 17 pods -- `dev` + `prod` HA does not fit on two nodes.
+| Decision | Why |
+|---|---|
+| RDS, not in-cluster Postgres | Upstream DB pods are a demo convenience. On EKS you own backups, failover, and disk. RDS is managed, reachable only from the node SG; schema is seeded by Helm Jobs. |
+| One cluster, two environments | A second EKS (and NAT) roughly doubles lab cost. Namespaces plus **dedicated** RDS keep data from mixing; `enabled_environments` defaults to `["dev"]` so prod is a spend switch, not a second VPC. |
+| Bootstrap is local; `terraform/` is remote | GitHub Actions cannot create the OIDC role and state bucket it would need to apply `bootstrap/` (chicken and egg). That directory runs once from a laptop. |
+| App CI never talks to EKS | A build workflow should not hold `kubectl`. If those credentials leak, the blast radius is ECR and a Git commit, not the cluster. Argo **pulls**. Terraform apply may talk to EKS only as platform IaC (Argo, ESO, ALB Controller). |
+| Prod is a manual gate | Auto-sync after every green build is how a lab quietly “promotes.” Tags go to `values-prod.yaml` only via `workflow_dispatch`; prod Applications have no auto-sync. |
+| Two OIDC providers | GitHub’s issuer and EKS IRSA are different trust domains. One IAM role for both would let a compromised workflow use ESO’s path to Secrets Manager (or the ALB Controller). |
+| Secrets Manager for credentials | SM is built to rotate RDS passwords, JWT, and Grafana admin. Git only stores ExternalSecret CRs (how to fetch), not the payload. |
+| Spend is a switch, not a surprise | Two public UIs without a shared ALB are two balancers. No Cluster Autoscaler; `desired_size` is ignored after create. A `t3.medium` holds ~17 pods — `dev` + `prod` HA does not fit on two nodes, so scale-out is a conscious `update-nodegroup-config`. |
 
 ## Repository layout
 
 ```
-bootstrap/          # One-shot: S3 state, DynamoDB lock, GitHub OIDC (local state)
-terraform/          # VPC, EKS, ECR, RDS, ESO, Argo CD (remote state)
-  modules/{vpc,eks,ecr,rds,external-secrets,argocd-bootstrap}
-charts/bank-of-anthos/   # Umbrella chart + values-dev.yaml / values-prod.yaml
+bootstrap/                 # One-shot: S3 state, DynamoDB lock, GitHub OIDC (local state)
+terraform/                 # VPC, EKS, ECR, RDS, add-ons, Argo CD (remote state)
+  modules/{vpc,eks,ecr,rds,external-secrets,
+           aws-load-balancer-controller,ingress-dns,external-dns,argocd-bootstrap}
+charts/bank-of-anthos/     # Umbrella chart + values-dev.yaml / values-prod.yaml
 gitops/
-  apps/{dev,prod}/  # Argo Applications + ExternalSecrets
-  platform/         # ClusterSecretStore (live AppProject is Terraform)
-src/                # Vendored BoA snapshot for image builds (no upstream sync)
-.github/workflows/  # ci-build-images -> cd-update-values-dev; manual prod promote
-scripts/            # bootstrap-jwt.ps1
+  apps/{dev,prod}/         # Argo Applications + ExternalSecrets
+  platform/                # ClusterSecretStore + kube-prometheus-stack
+src/                       # Vendored BoA snapshot for image builds (no upstream sync)
+.github/workflows/         # App images + tag promote; Terraform plan/apply
+scripts/                   # bootstrap-jwt.ps1, bootstrap-grafana.ps1
+docs/                      # deploy.md, operations.md, architecture PNG, screenshots/
 ```
 
 Application source is a snapshot of [Bank of Anthos](https://github.com/GoogleCloudPlatform/bank-of-anthos) (`1e40564`, Apache 2.0). In-cluster DB images and `ledgermonolith` are omitted on purpose.
 
 ## Deploy (outline)
 
-Prerequisites: AWS CLI, Terraform >= 1.5, kubectl, Helm, PowerShell. Region in examples is `eu-central-1`.
+Prerequisites: AWS CLI, Terraform >= 1.5, kubectl, Helm, PowerShell. Region in examples is `eu-central-1`. Knobs live in committed `terraform/terraform.tfvars` (no secrets). Forks start from `terraform.tfvars.example`.
 
-1. **Bootstrap (once)** -- `bootstrap/`: copy `terraform.tfvars.example`, set `TF_VAR_github_token`, `terraform apply`. Creates the state bucket, lock table, and GitHub OIDC role. Copy outputs into `terraform/backend.conf` (gitignored).
-2. **Platform** -- `terraform/`: `terraform init -backend-config=backend.conf`, fill `terraform.tfvars` from the example, set `TF_VAR_argocd_gh_token`, `terraform apply`. Shared VPC/EKS/ECR always; RDS + Argo root Apps follow `enabled_environments`.
-3. **JWT** -- `.\scripts\bootstrap-jwt.ps1` (writes the RS256 keypair to Secrets Manager; ESO syncs `jwt-key`).
-4. **Images** -- push to `main` under `src/**` (or run `ci-build-images` / `cd-update-values-dev` by hand). Argo auto-syncs **dev**.
-5. **Prod** -- set `enabled_environments = ["dev", "prod"]` and apply; run `cd-update-values-prod`; **Sync** `bank-of-anthos-prod` in Argo CD.
+1. **Bootstrap (once)** — `bootstrap/`: copy `terraform.tfvars.example`, set `TF_VAR_github_token`, `terraform apply`. Creates the state bucket, lock table, and GitHub OIDC role. Copy outputs into `terraform/backend.conf` (gitignored).
+2. **Platform** — `terraform/`: `terraform init -backend-config=backend.conf`, set `TF_VAR_argocd_gh_token`, `terraform apply`. Shared VPC/EKS/ECR always; RDS + Argo root Apps follow `enabled_environments`. Public TLS needs an existing Route 53 zone and `ingress_domain`.
+3. **Secrets** — `.\scripts\bootstrap-jwt.ps1` and `.\scripts\bootstrap-grafana.ps1` (ESO syncs `jwt-key` and Grafana admin).
+4. **Images** — push to `main` under `src/**` (or run `ci-build-images` / `cd-update-values-dev` by hand). Argo auto-syncs **dev**. Seed Jobs must succeed before Java ledger pods become Ready.
+5. **Prod** — set `enabled_environments = ["dev", "prod"]` and apply; run `cd-update-values-prod`; **Sync** `bank-of-anthos-prod` in Argo CD.
 
-Demo user (when `dbInit.loadDemoData=true`): `testuser` / `bankofanthos`.
 
-```powershell
-aws eks update-kubeconfig --name bank-of-anthos --region eu-central-1
-kubectl -n argocd port-forward svc/argocd-server 8080:443
-kubectl -n bank-of-anthos-dev port-forward svc/frontend 8081:80
-```
+Without `ingress_domain`, frontend and Grafana are port-forward only (`svc/frontend` in `bank-of-anthos-dev`, Grafana in `monitoring`).
 
-Until ALB exists, the UI is port-forward only.
+Full walkthrough (PowerShell, kubeconfig `--role-arn`, tear-down): [docs/deploy.md](docs/deploy.md). Day-2 (scale nodes, promote, pod limits, Terraform CI/CD): [docs/operations.md](docs/operations.md).
 
 ## CI / CD
 
@@ -116,21 +96,15 @@ src change on main
 promote
   -> cd-update-values-prod (workflow_dispatch)
   -> Argo CD manual sync of bank-of-anthos-prod
+
+terraform/** PR
+  -> terraform-plan (fmt / validate / plan, PR comment)
+
+terraform/** merge to main
+  -> terraform-apply (GitHub Environment infra)
 ```
 
-`global.imageRegistry` and RDS hosts are **not** in those YAML files. Terraform passes them into the root App-of-Apps as Helm parameters.
-
-## Status
-
-| Area | State |
-|---|---|
-| Foundation, VPC, EKS, ECR, RDS | Done |
-| Helm umbrella + Argo CD GitOps | Done |
-| External Secrets + per-env RDS + JWT | Done |
-| CI (ECR) + tag promote | Done |
-| AWS Load Balancer Controller + Ingress | Next |
-| kube-prometheus-stack | Planned |
-| Operations runbook (`docs/operations.md`) | Planned |
+`global.imageRegistry`, RDS hosts, and Ingress host/cert are **not** in the values overlays. Terraform passes them into the root App-of-Apps as Helm parameters. App workflows have no cluster credentials. Disable `terraform-apply` in the Actions UI when the lab should not apply itself.
 
 ## License
 
